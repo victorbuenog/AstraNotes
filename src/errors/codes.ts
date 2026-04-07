@@ -1,0 +1,19 @@
+/** Stable codes for support and logs — do not rename once shipped */
+export const ErrorCodes = {
+  VAULT_LOCKED: 'AN_VAULT_001',
+  VAULT_WRONG_PASSPHRASE: 'AN_VAULT_002',
+  VAULT_INIT_FAILED: 'AN_VAULT_003',
+  NOTE_NOT_FOUND: 'AN_NOTE_001',
+  NOTE_SAVE_FAILED: 'AN_NOTE_002',
+  NOTE_DELETE_FAILED: 'AN_NOTE_003',
+  NOTE_LIST_FAILED: 'AN_NOTE_004',
+  CRYPTO_UNAVAILABLE: 'AN_CRYPTO_001',
+  CRYPTO_ENCRYPT_FAILED: 'AN_CRYPTO_002',
+  CRYPTO_DECRYPT_FAILED: 'AN_CRYPTO_003',
+  STORAGE_OPEN_FAILED: 'AN_DB_001',
+  STORAGE_CORRUPT: 'AN_DB_002',
+  VALIDATION_INVALID_NOTE: 'AN_VAL_001',
+  UNKNOWN: 'AN_UNKNOWN',
+} as const
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
