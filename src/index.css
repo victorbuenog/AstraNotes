@@ -75,6 +75,25 @@ body {
   gap: 0.75rem;
 }
 
+.sidebar__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sidebar__user {
+  margin: -0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.btn--sm {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+}
+
 .sidebar__brand {
   font-size: 1.1rem;
   font-weight: 600;
@@ -418,6 +437,29 @@ body {
   color: var(--muted);
   font-size: 0.92rem;
   line-height: 1.45;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.auth-tabs__btn {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.auth-tabs__btn.is-active {
+  background: var(--accent-muted);
+  color: var(--text);
+  border-color: transparent;
 }
 
 .vault-card__error {

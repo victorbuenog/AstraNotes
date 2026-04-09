@@ -1,5 +1,10 @@
 import { useNotes } from '../context/NotesContext'
 
+type SidebarProps = {
+  username?: string
+  onLogout?: () => void
+}
+
 function formatTime(ts: number): string {
   try {
     return new Intl.DateTimeFormat(undefined, {
@@ -11,7 +16,7 @@ function formatTime(ts: number): string {
   }
 }
 
-export function Sidebar() {
+export function Sidebar({ username, onLogout }: SidebarProps) {
   const { notes, selectedId, selectNote, createNote, showArchived, setShowArchived } = useNotes()
 
   const visible = notes
@@ -21,7 +26,15 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__header">
-        <h1 className="sidebar__brand">AstraNotes</h1>
+        <div className="sidebar__title-row">
+          <h1 className="sidebar__brand">AstraNotes</h1>
+          {username && onLogout && (
+            <button type="button" className="btn btn--ghost btn--sm" onClick={onLogout}>
+              Log out
+            </button>
+          )}
+        </div>
+        {username && <p className="sidebar__user">{username}</p>}
         <button type="button" className="btn btn--primary" onClick={() => void createNote()}>
           New note
         </button>

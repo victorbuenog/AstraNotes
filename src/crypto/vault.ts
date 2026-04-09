@@ -85,7 +85,7 @@ export class Vault {
         this.key = null
         throw new AppError(ErrorCodes.VAULT_WRONG_PASSPHRASE, 'Incorrect passphrase')
       }
-    } catch (e) {
+    } catch (e: unknown) {
       this.key = null
       if (e instanceof AppError && e.code === ErrorCodes.VAULT_WRONG_PASSPHRASE) throw e
       throw new AppError(ErrorCodes.VAULT_WRONG_PASSPHRASE, 'Incorrect passphrase', e)

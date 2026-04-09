@@ -8,8 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { Vault } from '../crypto/vault'
-import * as store from '../storage/noteStore'
+import * as api from '../api/client'
+import type { Vault } from '../crypto/vault'
 import type { Note } from '../types/note'
 import { newNote, setPrimaryMarkdown } from '../types/note'
 import { AppError } from '../errors/AppError'
@@ -61,16 +61,21 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const reload = useCallback(async () => {
     if (!vault.isUnlocked()) return
     try {
-      const summaries = await store.listSummaries(vault)
-      const full: Note[] = []
-      for (const s of summaries.sort((a, b) => b.updatedAt - a.updatedAt)) {
-        const n = await store.loadNote(vault, s.id)
-        if (n) full.push(n)
+      const { notes: initialNotes, legacyIds } = await api.listNotes(vault)
+      let loaded = initialNotes
+      if (legacyIds.length > 0) {
+        for (const id of legacyIds) {
+          const n = loaded.find((x) => x.id === id)
+          if (n) await api.upgradeLegacyNote(vault, n)
+        }
+        const again = await api.listNotes(vault)
+        loaded = again.notes
       }
-      setNotes(full)
+      const sorted = loaded.sort((a, b) => b.updatedAt - a.updatedAt)
+      setNotes(sorted)
       setSelectedId((cur) => {
-        if (cur && full.some((n) => n.id === cur)) return cur
-        return full[0]?.id ?? null
+        if (cur && sorted.some((n) => n.id === cur)) return cur
+        return sorted[0]?.id ?? null
       })
     } catch (e) {
       const msg = e instanceof AppError ? e.message : String(e)
@@ -88,7 +93,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       if (!vault.isUnlocked()) return
       setSaving(true)
       try {
-        await store.saveNote(vault, note)
+        await api.saveNote(vault, note)
         setLastSavedAt(Date.now())
       } catch (e) {
         const msg = e instanceof AppError ? e.message : String(e)
@@ -147,7 +152,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     if (!vault.isUnlocked()) return
     const note = newNote()
     try {
-      await store.saveNote(vault, note)
+      await api.saveNote(vault, note)
       setNotes((prev) => [note, ...prev].sort((a, b) => b.updatedAt - a.updatedAt))
       setSelectedId(note.id)
       setLastSavedAt(Date.now())
@@ -210,7 +215,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     async (id: string) => {
       await flushSave()
       try {
-        await store.deleteNote(id)
+        await api.deleteNote(id)
         setNotes((prev) => {
           const filtered = prev.filter((n) => n.id !== id)
           setSelectedId((sel) => {
