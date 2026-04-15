@@ -1,0 +1,24 @@
+# Pre-built image from GHCR (multi-arch: amd64 + arm64 for Raspberry Pi).
+# 1. Push to main (or tag v*) so CI publishes to ghcr.io/<owner>/<repo>.
+# 2. On the server: make the repo name lowercase in the image URL.
+# 3. docker compose -f docker-compose.ghcr.yml --env-file .env up -d
+#
+# Example .env:
+#   ASTRANOTES_IMAGE=ghcr.io/youruser/your-repo:latest
+#   SESSION_SECRET=<long random string>
+#   ASTRANOTES_HOST_DATA=/tank/data/astranotes
+
+services:
+  app:
+    image: ${ASTRANOTES_IMAGE?}
+    container_name: astranotes
+    restart: unless-stopped
+    ports:
+      - "4173:4173"
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      SESSION_SECRET: ${SESSION_SECRET?}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${ASTRANOTES_HOST_DATA?}:/app/data

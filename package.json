@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "docker:up": "docker compose up --build",
-    "docker:prod": "docker compose --profile prod up --build"
+    "docker:prod": "docker compose --profile prod up --build",
+    "docker:ghcr": "docker compose -f docker-compose.ghcr.yml up -d"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
