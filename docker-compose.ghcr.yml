@@ -20,6 +20,7 @@ services:
       - "4173:4173"
     environment:
       NODE_ENV: production
+      # Must match ports: "4173:4173" — if PORT were 3001, proxies (Tailscale) would see HTTP 502.
       PORT: "4173"
       SESSION_SECRET: ${SESSION_SECRET?}
     volumes:

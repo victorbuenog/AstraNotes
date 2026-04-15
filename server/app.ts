@@ -80,6 +80,11 @@ export function createApp(db: Database, sessionSecret: string): express.Applicat
     }),
   )
 
+  app.get('/api/health', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store')
+    res.status(200).json({ ok: true })
+  })
+
   function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
     const uid = req.session.userId
     if (typeof uid !== 'number') {

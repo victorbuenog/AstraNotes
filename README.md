@@ -89,6 +89,11 @@ Open **`http://localhost:4173`**. Set a strong **`SESSION_SECRET`** in `.env` or
 **`AN_CRYPTO_001` / Web Crypto not available (register or unlock on a home server).**  
 You are almost certainly on **plain HTTP** to a **non-localhost** URL. Use **HTTPS** in front of the app (see **NAS / Raspberry Pi / LAN** above).
 
+**HTTP 502** (e.g. from **Tailscale Serve** or a reverse proxy). The proxy reached nothing useful upstream. Check, in order:
+
+1. **App is listening on the same port Docker publishes** (default **4173**). Inside the container: `wget -qO- http://127.0.0.1:4173/api/health` should print `{"ok":true}`. If that fails, run `docker logs astranotes` and confirm **`PORT`** — it must be **4173** when Compose maps **`4173:4173`**. An old **`PORT=3001`** in the environment makes the app listen on **3001** while the host still maps **4173** → **502**.
+2. **Tailscale Serve backend** must point at that host port, e.g. `tailscale serve --bg http://172.17.0.1:4173` (Linux Docker bridge). If it fails, from the Tailscale container try **`wget -qO- http://HOST_IP:4173/api/health`** using the **NAS LAN IP** instead of **172.17.0.1**.
+
 **`http proxy error` / `ECONNREFUSED 127.0.0.1:3001` (often before login).**  
 Vite forwards `/api` to the API on port **3001**. This error means **nothing is listening there** — almost always because **`npm run dev:api` crashed** while **`npm run dev:web` kept running**. Scroll the terminal for the **`[0]`** (API) lines, not only `[1]` (Vite).
 

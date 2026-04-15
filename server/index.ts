@@ -66,9 +66,25 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(distIndex)) {
 }
 
 const port = Number(process.env.PORT ?? 3001)
+if (!Number.isFinite(port) || port < 1 || port > 65535) {
+  console.error(`Refusing to start: invalid PORT=${JSON.stringify(process.env.PORT)}`)
+  process.exit(1)
+}
+
+if (process.env.NODE_ENV === 'production' && port !== 4173) {
+  console.warn(
+    `[AstraNotes] PORT is ${port} (expected 4173 for the default Docker image). ` +
+      'If Compose maps "4173:4173", the app must listen on 4173 inside the container or Tailscale/nginx will get HTTP 502.',
+  )
+}
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`AstraNotes listening on http://0.0.0.0:${port}`)
+  console.log(`AstraNotes listening on http://0.0.0.0:${port} (PORT=${String(process.env.PORT ?? '')})`)
+  if (process.env.NODE_ENV === 'production') {
+    console.log(
+      `[AstraNotes] SPA: ${fs.existsSync(distIndex) ? `serving ${distPath}` : 'dist/ missing — only /api (check image build)'}`,
+    )
+  }
   console.log(`[AstraNotes API] SQLite database: ${resolvedDbPath}`)
   console.log(`[AstraNotes API] SQLite journal_mode (effective): ${journalActual}`)
 })
