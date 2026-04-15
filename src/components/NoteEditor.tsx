@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Note } from '../types/note'
 import { getPrimaryMarkdown } from '../types/note'
+import { parseTagsFromInput } from '../types/tags'
 import { BlockPreview } from './BlockPreview'
 import { useNotes } from '../context/NotesContext'
 
@@ -12,8 +13,14 @@ export function NoteEditor({ note }: Props) {
   const { updateNote, flushSave } = useNotes()
   const [title, setTitle] = useState(note.title)
   const [markdown, setMarkdown] = useState(() => getPrimaryMarkdown(note))
+  const [tagsField, setTagsField] = useState(() => note.tags.join(', '))
   const [mode, setMode] = useState<'edit' | 'split' | 'preview'>('split')
   // Parent uses `key={note.id}` so state resets when switching notes.
+
+  const tagsJoined = note.tags.join(',')
+  useEffect(() => {
+    setTagsField(tagsJoined)
+  }, [note.id, tagsJoined])
 
   const handleTitle = (v: string) => {
     setTitle(v)
@@ -23,6 +30,10 @@ export function NoteEditor({ note }: Props) {
   const handleBody = (v: string) => {
     setMarkdown(v)
     updateNote(note.id, { markdown: v })
+  }
+
+  const commitTags = () => {
+    updateNote(note.id, { tags: parseTagsFromInput(tagsField) })
   }
 
   const previews = useMemo(
@@ -58,6 +69,22 @@ export function NoteEditor({ note }: Props) {
         onBlur={() => void flushSave()}
         placeholder="Title"
         aria-label="Note title"
+      />
+      <label className="editor__tags-label" htmlFor={`tags-${note.id}`}>
+        Tags <span className="editor__tags-hint">(comma-separated; normalized lowercase)</span>
+      </label>
+      <input
+        id={`tags-${note.id}`}
+        className="editor__tags"
+        value={tagsField}
+        onChange={(e) => setTagsField(e.target.value)}
+        onBlur={() => {
+          commitTags()
+          void flushSave()
+        }}
+        placeholder="e.g. work, course"
+        aria-label="Tags"
+        autoComplete="off"
       />
       <div
         className={

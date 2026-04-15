@@ -4,6 +4,7 @@ import type { Vault } from '../crypto/vault'
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
 import type { AuthUser } from '../context/AuthContext'
+import { PasswordInput } from './PasswordInput'
 
 type Mode = 'login' | 'register'
 
@@ -115,29 +116,21 @@ export function AuthScreen({
               title="Letters, numbers, underscores, and hyphens only"
             />
           </label>
-          <label className="field">
-            <span>Password</span>
-            <input
-              type="password"
-              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-            />
-          </label>
+          <PasswordInput
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            id="auth-password"
+          />
           {mode === 'register' && (
-            <label className="field">
-              <span>Confirm password</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={password2}
-                onChange={(e) => setPassword2(e.target.value)}
-                required
-                minLength={8}
-              />
-            </label>
+            <PasswordInput
+              label="Confirm password"
+              value={password2}
+              onChange={setPassword2}
+              autoComplete="new-password"
+              id="auth-password-confirm"
+            />
           )}
           <button type="submit" className="btn btn--primary vault-form__submit" disabled={busy}>
             {busy ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Log in'}

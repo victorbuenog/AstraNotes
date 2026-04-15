@@ -2,6 +2,7 @@ import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
 import type { Vault, VaultMeta } from '../crypto/vault'
 import type { Note } from '../types/note'
+import { migrateNoteShape } from '../types/note'
 import { NOTE_PAYLOAD_VERSION, isEncryptedPayload } from '../types/noteWire'
 
 async function parseJson<T>(res: Response): Promise<T | null> {
@@ -17,8 +18,12 @@ async function parseJson<T>(res: Response): Promise<T | null> {
 function mapStatusToError(status: number, body: { error?: string } | null): AppError {
   const msg = body?.error ?? resMessage(status)
   if (status === 401) {
-    if (msg.includes('credentials')) {
-      return new AppError(ErrorCodes.AUTH_INVALID_CREDENTIALS, msg)
+    if (msg.toLowerCase().includes('credential')) {
+      return new AppError(
+        ErrorCodes.AUTH_INVALID_CREDENTIALS,
+        'Invalid username or password. Passwords must be at least 8 characters. ' +
+          'Use Register if you have not created an account on this server yet (the database is local to this machine).',
+      )
     }
     return new AppError(ErrorCodes.AUTH_UNAUTHORIZED, msg)
   }
@@ -30,7 +35,11 @@ function mapStatusToError(status: number, body: { error?: string } | null): AppE
     return new AppError(ErrorCodes.AUTH_USERNAME_TAKEN, msg)
   }
   if (status >= 400 && status < 500) {
-    return new AppError(ErrorCodes.VALIDATION_INVALID_NOTE, msg)
+    const loginHint =
+      /invalid username or password/i.test(msg) && status === 400
+        ? ' Username must be 3–32 characters (letters, digits, _, -); password at least 8 characters.'
+        : ''
+    return new AppError(ErrorCodes.VALIDATION_INVALID_NOTE, msg + loginHint)
   }
   return new AppError(ErrorCodes.AUTH_NETWORK, msg)
 }
@@ -150,19 +159,28 @@ export async function listNotes(vault: Vault): Promise<ListNotesResult> {
   const legacyIds: string[] = []
   for (const row of rows) {
     if (isEncryptedPayload(row.payload)) {
-      const json = await vault.decrypt(row.payload.ivB64, row.payload.ciphertextB64)
+      let json: string
+      try {
+        json = await vault.decrypt(row.payload.ivB64, row.payload.ciphertextB64)
+      } catch (e) {
+        throw new AppError(
+          ErrorCodes.CRYPTO_DECRYPT_FAILED,
+          'Could not decrypt a note. Wrong password, corrupt data, or ciphertext from another vault.',
+          e,
+        )
+      }
       let note: Note
       try {
-        note = JSON.parse(json) as Note
+        note = migrateNoteShape(JSON.parse(json) as Note)
       } catch (e) {
-        throw new AppError(ErrorCodes.STORAGE_CORRUPT, 'Could not parse decrypted note', e)
+        throw new AppError(ErrorCodes.STORAGE_CORRUPT, 'Could not parse decrypted note JSON', e)
       }
       if (note.updatedAt !== row.updatedAt) {
         note = { ...note, updatedAt: row.updatedAt }
       }
       notes.push(note)
     } else if (isLegacyPlainNote(row.payload)) {
-      let note = row.payload
+      let note = migrateNoteShape(row.payload)
       if (note.updatedAt !== row.updatedAt) {
         note = { ...note, updatedAt: row.updatedAt }
       }

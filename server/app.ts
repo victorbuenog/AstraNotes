@@ -61,6 +61,10 @@ export function createApp(db: Database, sessionSecret: string): express.Applicat
   const app = express()
   app.set('trust proxy', 1)
   app.use(express.json({ limit: '2mb' }))
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store')
+    next()
+  })
   app.use(
     session({
       secret: sessionSecret,

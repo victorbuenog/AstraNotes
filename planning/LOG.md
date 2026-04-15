@@ -6,9 +6,13 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 
 **Autosave.** Edits are **debounced** (~450 ms) and saved via encrypted `PUT /api/notes/:id`, with **Saving… / Saved** in the UI.
 
+**Archive vs delete.** **Archive** sets `archived: true`, keeps the row, and hides the note from the default sidebar list (user can **Show archived** and **Unarchive**). **Delete permanently** calls `DELETE /api/notes/:id` and removes the row (**cannot be undone**).
+
 **Markdown and future media.** Notes still use a **versioned `NoteDocument`** with a **block array**; the MVP edits the primary **markdown** block. **Image, audio, LaTeX** blocks remain type-level extension points.
 
-**UI/UX.** **Sidebar** lists notes by **last modified**; **Log out** and signed-in username appear in the sidebar header. **Light/Dark** via `ThemeContext`. **Log in** does not show a separate unlock step; **refresh** with an active session may.
+**UI/UX.** **Sidebar** lists notes by **last modified** with **search** (title + body, client-side), **tag filter**, **Export vault** / **Import** (JSON v1, plaintext — confirm). Each row has a **⋯** menu for **Archive** / **Restore** and **Delete**; **Delete** uses a modal (cannot be undone) with **Never ask again** stored per **username** in `localStorage` (`src/preferences/deleteConfirm.ts`). **Tags** on each note (comma-separated, normalized). **Log out** and signed-in username in the sidebar header. **Light/Dark** via `ThemeContext`. **Log in** does not show a separate unlock step; **refresh** with an active session may.
+
+**Refined requirements alignment.** Implements **FR2a** (search), **FR2b** (tags), **FR7** (export/import), **FR4** (`docs/plugins.md`). **Session expiry** on save/import surfaces a clear banner message. **Decrypt** failures use `AN_CRYPTO_003` with an explicit user message. API sets **`Cache-Control: no-store`** on `/api/*`.
 
 **Errors.** **`AppError`** + **`ErrorCodes`** include auth codes (`AN_AUTH_*`); **`ErrorBanner`** shows messages with codes.
 
@@ -16,9 +20,41 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 
 **Legacy.** Older **plaintext** note rows (pre-encryption) are **auto re-uploaded** as ciphertext on first load after unlock when possible. The original **IndexedDB-only** vault path remains **removed**; there is **no** automatic migration of that data to the server.
 
+**DevOps / portability.** Optional **Docker** + **Compose** + **Dev Container** document a single **Linux** toolchain for Mac and Windows (`Dockerfile`, `docker-compose.yml`, `.devcontainer/`). **SQLite** journal mode auto-adjusts on **network/SMB paths** (`server/journalMode.ts`, `ASTRANOTES_SQLITE_JOURNAL_MODE`). **Public repo:** `https://github.com/victorbuenog/AstraNotes`.
+
 ---
 
 ## Log
+
+### 2026-04-15 — Planning docs sync, GitHub remote, Docker, auth UX
+
+*Align `planning/` with the current product; record repository URL; document Docker and cross-machine workflow.*
+
+- **Repository:** [victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes) — clone + `npm install` per machine; `data/` and `.env` remain local (gitignored).
+- **Planning:** Updated [`planning/README.md`](./README.md) (repo link, Docker, env vars, project tree, scripts); [`glossary.md`](./glossary.md) (Docker terms); [`sprint-zero-plan.md`](./sprint-zero-plan.md) (dev workflow); [`backlog.md`](./backlog.md) (status note); [`requirements.md`](./requirements.md) (implementation pointer); [`Working Agreement.md`](./Working%20Agreement.md) (source location); [`user-stories.md`](./user-stories.md) (delete/archive UI note); [`Definition of Done.md`](./Definition%20of%20Done.md) (planning alignment).
+- **Product (already in tree):** Docker image/Compose, Vite `host` for containers, password visibility on Auth/Unlock, sidebar ⋯ actions + delete confirmation preference, SQLite journal heuristics, README troubleshooting for `better-sqlite3` / API not running.
+
+### 2026-04-14 — Sidebar note actions: ⋯ menu, delete modal, “never ask again” (per user)
+
+*Move archive/delete out of the main editor header; add a three-dot menu on each sidebar row; delete confirmation dialog with per-user optional skip via localStorage; update planning README and log.*
+
+- **UI:** Removed **`NoteActionsBar`** from the main pane (`App.tsx`). Sidebar rows are a **select** control plus a **⋮** button opening **Archive** (or **Restore** when **Show archived**) and **Delete…**.
+- **Delete flow:** Modal explains permanence; **Cancel** / **Confirm**; **Never ask again** (only persisted when the user confirms) sets `localStorage` key scoped by signed-in **username** (`astranotes.skipDeleteConfirm:<username>`). Subsequent deletes skip the modal for that user on that browser.
+- **Code:** `src/preferences/deleteConfirm.ts` (+ Vitest `deleteConfirm.test.ts`); `Sidebar.tsx` menu + backdrop dialog; `index.css` row layout, menu, modal. **Typecheck** passes.
+
+*Definition of Done / Working Agreement:* Change maps to requirements (safer destructive UX), is documented here and in `planning/README.md`, and is verifiable visually and via unit tests for the preference helper. No server or cross-user data exposure for the “never ask again” flag (client-only).
+
+### 2026-04-13 — Refined requirements: search, tags, export/import, plugins doc
+
+*Apply `planning/refined_requirements.md` baseline: FR2a, FR2b, FR7, FR4; edge-case UX for session loss and decrypt errors.*
+
+- **Model:** `Note.tags` (encrypted with note JSON); `migrateNoteShape` for older rows; `src/types/tags.ts` normalization (max count/length, lowercase, dedupe).
+- **Search:** `src/search/noteSearch.ts` — title + body, empty query = full list, max query length 500.
+- **Vault file:** `src/vault/exportFormat.ts` — `formatVersion: 1`, `app: astranotes`, round-trip tests; export confirms plaintext warning; import upserts by note id.
+- **UI:** Sidebar search, tag `<select>`, export/import; `NoteEditor` tags field; empty-state copy when filters match nothing.
+- **API client:** `CRYPTO_DECRYPT_FAILED` message on `vault.decrypt` failure; friendlier `AUTH_UNAUTHORIZED` text on save/import.
+- **Server:** `Cache-Control: no-store` for all `/api` routes.
+- **Docs:** [`docs/plugins.md`](../docs/plugins.md); root [`README.md`](../README.md) updated (threat model, FR pointers, structure).
 
 ### 2026-04-07 — Client-side encryption for server-backed notes
 

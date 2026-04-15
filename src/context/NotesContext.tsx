@@ -11,7 +11,13 @@ import {
 import * as api from '../api/client'
 import type { Vault } from '../crypto/vault'
 import type { Note } from '../types/note'
-import { newNote, setPrimaryMarkdown } from '../types/note'
+import { migrateNoteShape, newNote, setPrimaryMarkdown } from '../types/note'
+import { normalizeTags } from '../types/tags'
+import {
+  buildVaultExport,
+  parseVaultImportJson,
+  serializeVaultExport,
+} from '../vault/exportFormat'
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
@@ -23,11 +29,20 @@ type NotesContextValue = {
   selectedId: string | null
   selectNote: (id: string | null) => void
   createNote: () => Promise<void>
-  updateNote: (id: string, patch: Partial<Pick<Note, 'title'>> & { markdown?: string }) => void
+  updateNote: (
+    id: string,
+    patch: Partial<Pick<Note, 'title' | 'tags'>> & { markdown?: string },
+  ) => void
   flushSave: () => Promise<void>
   archiveNote: (id: string) => Promise<void>
   unarchiveNote: (id: string) => Promise<void>
   deleteNoteForever: (id: string) => Promise<void>
+  exportVaultJson: () => void
+  importVaultFromText: (text: string) => Promise<void>
+  searchQuery: string
+  setSearchQuery: (q: string) => void
+  tagFilter: string | null
+  setTagFilter: (t: string | null) => void
   saving: boolean
   lastSavedAt: number | null
   error: AppErrorState
@@ -46,6 +61,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const [saving, setSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [error, setError] = useState<AppErrorState>(null)
   const pendingRef = useRef<Map<string, Note>>(new Map())
   const notesRef = useRef<Note[]>([])
@@ -98,7 +115,11 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       } catch (e) {
         const msg = e instanceof AppError ? e.message : String(e)
         const code = e instanceof AppError ? e.code : ErrorCodes.NOTE_SAVE_FAILED
-        report(msg, code)
+        const friendly =
+          e instanceof AppError && e.code === ErrorCodes.AUTH_UNAUTHORIZED
+            ? 'Your session ended or you were logged out; this note could not be saved. Copy any important text, then sign in again.'
+            : msg
+        report(friendly, code)
       } finally {
         setSaving(false)
       }
@@ -164,7 +185,10 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   }, [vault, report])
 
   const updateNote = useCallback(
-    (id: string, patch: Partial<Pick<Note, 'title'>> & { markdown?: string }) => {
+    (
+      id: string,
+      patch: Partial<Pick<Note, 'title' | 'tags'>> & { markdown?: string },
+    ) => {
       const current = notesRef.current.find((n) => n.id === id)
       if (!current) {
         report('Note not found in session', ErrorCodes.NOTE_NOT_FOUND)
@@ -173,6 +197,9 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       let next = current
       if (patch.title !== undefined) {
         next = { ...next, title: patch.title || 'Untitled', updatedAt: Date.now() }
+      }
+      if (patch.tags !== undefined) {
+        next = { ...next, tags: normalizeTags(patch.tags), updatedAt: Date.now() }
       }
       if (patch.markdown !== undefined) {
         next = setPrimaryMarkdown(next, patch.markdown)
@@ -235,6 +262,48 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
 
   const clearError = useCallback(() => setError(null), [])
 
+  const exportVaultJson = useCallback(() => {
+    const data = buildVaultExport(notesRef.current)
+    const blob = new Blob([serializeVaultExport(data)], {
+      type: 'application/json;charset=utf-8',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `astranotes-export-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const importVaultFromText = useCallback(
+    async (text: string) => {
+      const result = parseVaultImportJson(text)
+      if (!result.ok) {
+        report(result.error, ErrorCodes.VALIDATION_INVALID_NOTE)
+        return
+      }
+      setSaving(true)
+      try {
+        for (const note of result.data.notes) {
+          await api.saveNote(vault, migrateNoteShape(note))
+        }
+        setLastSavedAt(Date.now())
+        await reload()
+      } catch (e) {
+        const msg = e instanceof AppError ? e.message : String(e)
+        const code = e instanceof AppError ? e.code : ErrorCodes.NOTE_SAVE_FAILED
+        const friendly =
+          e instanceof AppError && e.code === ErrorCodes.AUTH_UNAUTHORIZED
+            ? 'Your session ended or you were logged out; import could not finish. Sign in and try again.'
+            : msg
+        report(friendly, code)
+      } finally {
+        setSaving(false)
+      }
+    },
+    [vault, reload, report],
+  )
+
   const value = useMemo(
     (): NotesContextValue => ({
       notes,
@@ -246,6 +315,12 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       archiveNote,
       unarchiveNote,
       deleteNoteForever,
+      exportVaultJson,
+      importVaultFromText,
+      searchQuery,
+      setSearchQuery,
+      tagFilter,
+      setTagFilter,
       saving,
       lastSavedAt,
       error,
@@ -263,6 +338,10 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       archiveNote,
       unarchiveNote,
       deleteNoteForever,
+      exportVaultJson,
+      importVaultFromText,
+      searchQuery,
+      tagFilter,
       saving,
       lastSavedAt,
       error,

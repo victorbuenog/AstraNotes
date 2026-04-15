@@ -3,6 +3,7 @@ import * as api from '../api/client'
 import type { Vault } from '../crypto/vault'
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
+import { PasswordInput } from './PasswordInput'
 
 export function UnlockScreen({
   vault,
@@ -67,17 +68,13 @@ export function UnlockScreen({
           </div>
         )}
         <form className="vault-form" onSubmit={(e) => void submit(e)}>
-          <label className="field">
-            <span>Password</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-            />
-          </label>
+          <PasswordInput
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+            id="unlock-password"
+          />
           <button type="submit" className="btn btn--primary vault-form__submit" disabled={busy}>
             {busy ? 'Please wait…' : 'Unlock'}
           </button>

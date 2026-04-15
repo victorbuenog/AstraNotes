@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotesProvider, useNotes } from './context/NotesContext'
 import { AuthScreen } from './components/AuthScreen'
 import { UnlockScreen } from './components/UnlockScreen'
-import { Sidebar, NoteActionsBar } from './components/Sidebar'
+import { Sidebar } from './components/Sidebar'
 import { NoteEditor } from './components/NoteEditor'
 import { ErrorBanner } from './components/ErrorBanner'
 import { Vault } from './crypto/vault'
@@ -24,7 +24,6 @@ function MainChrome({ onLogout }: { onLogout: () => void }) {
         <Sidebar username={user?.username} onLogout={() => void onLogout()} />
         <main className="main">
           <header className="main__top">
-            <NoteActionsBar />
             <div className="main__meta">
               {saveLabel && <span className="save-pill">{saveLabel}</span>}
               <button

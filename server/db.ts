@@ -2,11 +2,18 @@ import fs from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 
-export function openDb(dbPath: string): Database.Database {
+/** WAL is fastest on local disks; DELETE/TRUNCATE are safer on network filesystems (SMB/NAS) and many cloud folders. */
+export type SqliteJournalMode = 'WAL' | 'DELETE' | 'TRUNCATE'
+
+export function openDb(
+  dbPath: string,
+  opts?: { journalMode?: SqliteJournalMode },
+): Database.Database {
   const dir = path.dirname(dbPath)
   fs.mkdirSync(dir, { recursive: true })
   const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
+  const journalMode = opts?.journalMode ?? 'WAL'
+  db.pragma(`journal_mode = ${journalMode}`)
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

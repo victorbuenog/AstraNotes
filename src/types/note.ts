@@ -1,3 +1,5 @@
+import { normalizeTags } from './tags.js'
+
 /**
  * Extensible note document: new block types (image, audio, latex) add fields
  * without migrating the whole storage format — bump `document.version` only when needed.
@@ -43,6 +45,8 @@ export type NoteDocument = {
 export type Note = {
   id: string
   title: string
+  /** Normalized lowercase tags (see `src/types/tags.ts`). */
+  tags: string[]
   archived: boolean
   createdAt: number
   updatedAt: number
@@ -62,16 +66,23 @@ export function createEmptyDocument(): NoteDocument {
   }
 }
 
-export function newNote(partial?: Partial<Pick<Note, 'title'>>): Note {
+export function newNote(partial?: Partial<Pick<Note, 'title' | 'tags'>>): Note {
   const now = Date.now()
   return {
     id: crypto.randomUUID(),
     title: partial?.title?.trim() || 'Untitled',
+    tags: partial?.tags !== undefined ? normalizeTags(partial.tags) : [],
     archived: false,
     createdAt: now,
     updatedAt: now,
     document: createEmptyDocument(),
   }
+}
+
+/** Ensure tags exist on notes loaded from older payloads. */
+export function migrateNoteShape(raw: Note): Note {
+  const tags = Array.isArray(raw.tags) ? normalizeTags(raw.tags.map(String)) : []
+  return { ...raw, tags }
 }
 
 /** Single markdown block text helper for MVP editor */

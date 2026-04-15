@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "docker:up": "docker compose up --build",
+    "docker:prod": "docker compose --profile prod up --build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

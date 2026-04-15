@@ -1,0 +1,11 @@
+{
+  "name": "AstraNotes",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/app",
+  "forwardPorts": [5173, 3001],
+  "portsAttributes": {
+    "5173": { "label": "Vite dev server" },
+    "3001": { "label": "Express API" }
+  }
+}
