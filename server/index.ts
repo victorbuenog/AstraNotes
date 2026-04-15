@@ -1,5 +1,7 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import express from 'express'
 import { openDb, type SqliteJournalMode } from './db.js'
 import { createApp } from './app.js'
 import { suggestedSqliteJournalMode } from './journalMode.js'
@@ -43,10 +45,30 @@ if (sessionSecret === 'dev-only-set-SESSION_SECRET-in-production' && process.env
 const db = openDb(resolvedDbPath, { journalMode: readJournalMode(resolvedDbPath) })
 const journalActual = db.pragma('journal_mode', { simple: true }) as string
 const app = createApp(db, sessionSecret)
+
+const distPath = path.join(root, 'dist')
+const distIndex = path.join(distPath, 'index.html')
+if (process.env.NODE_ENV === 'production' && fs.existsSync(distIndex)) {
+  app.use(express.static(distPath))
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      next()
+      return
+    }
+    if (req.path.startsWith('/api')) {
+      next()
+      return
+    }
+    res.sendFile(distIndex, (err) => {
+      if (err) next(err)
+    })
+  })
+}
+
 const port = Number(process.env.PORT ?? 3001)
 
-app.listen(port, () => {
-  console.log(`AstraNotes API listening on http://127.0.0.1:${port}`)
+app.listen(port, '0.0.0.0', () => {
+  console.log(`AstraNotes listening on http://0.0.0.0:${port}`)
   console.log(`[AstraNotes API] SQLite database: ${resolvedDbPath}`)
   console.log(`[AstraNotes API] SQLite journal_mode (effective): ${journalActual}`)
 })

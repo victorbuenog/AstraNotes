@@ -19,7 +19,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
 
-  # Production-style: built assets + API (open http://localhost:4173 — /api proxied inside the container)
+  # Production-style: Express serves dist/ + /api on one port (default 4173 in image)
   app-prod:
     profiles: ["prod"]
     build:
@@ -32,7 +32,7 @@ services:
       - prod_data:/app/data
     environment:
       NODE_ENV: production
-      PORT: "3001"
+      PORT: "4173"
       # Any non-default secret; override via .env or shell (required for real deployment)
       SESSION_SECRET: ${SESSION_SECRET:-astranotes-docker-prod-change-me}
 

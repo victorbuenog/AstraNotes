@@ -73,14 +73,14 @@ Open **`http://localhost:5173`**. The API is on **`http://localhost:3001`** (als
 
 **Dev Container (Cursor / VS Code):** open the folder in a container using [`.devcontainer/devcontainer.json`](./.devcontainer/devcontainer.json), which reuses the same Compose service.
 
-**Production-style preview** (built SPA + API in one stack; useful for smoke-testing the image):
+**Production Docker image** (Express serves **`dist/`** and **`/api`** on one port — default **4173**; no Vite preview, so reverse proxies like Tailscale do not hit Vite’s Host check):
 
 ```bash
 docker compose --profile prod up --build
 # or: npm run docker:prod
 ```
 
-Open **`http://localhost:4173`** (Vite preview proxies `/api` to the API in the container). Set a strong **`SESSION_SECRET`** in `.env` or the environment for anything beyond local smoke tests. Real deployments still need **HTTPS** for secure cookies in the browser.
+Open **`http://localhost:4173`**. Set a strong **`SESSION_SECRET`** in `.env` or the environment for anything beyond local smoke tests. Real deployments still need **HTTPS** for secure cookies in the browser.
 
 **NAS / Raspberry Pi / LAN:** If you open the app as **`http://192.168.x.x:4173`** (or any non-localhost HTTP URL), the browser is **not** a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts), so **`crypto.subtle`** is missing and **register / unlock will fail** with **`AN_CRYPTO_001`**. Put a **reverse proxy** (Caddy, Nginx, NPM, Traefik) in front with **HTTPS** (Let’s Encrypt, Tailscale Serve, or a trusted LAN certificate), or access only via **`https://…`**.
 
@@ -130,7 +130,7 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
 ```text
 .
 ├── index.html              # Vite HTML entry
-├── Dockerfile              # Dev + production preview images
+├── Dockerfile              # Dev image; production = Express + built SPA
 ├── docker-compose.yml      # Dev stack; optional prod profile
 ├── .devcontainer/          # Cursor/VS Code Dev Container (optional)
 ├── package.json            # Scripts and dependencies
@@ -199,7 +199,7 @@ npm run test         # Vitest (once)
 npm run test:watch   # Vitest watch mode
 npm run lint         # ESLint
 npm run docker:up    # Docker Compose: dev (Vite + API; see "Docker" section)
-npm run docker:prod  # Docker Compose profile prod: preview + API on :4173
+npm run docker:prod  # Docker Compose profile prod: Express serves SPA + API on :4173
 ```
 
 ## Privacy and security (short)

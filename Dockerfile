@@ -31,11 +31,12 @@ FROM node:22-bookworm AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Single process: Express serves built SPA from dist/ and /api (no Vite preview — avoids Host-header blocks behind Tailscale).
+ENV PORT=4173
 
 # Full tree from builder so vite, tsx, concurrently, and native modules match the build.
 COPY --from=builder /app /app
 
-EXPOSE 4173 3001
+EXPOSE 4173
 
-# Browser hits 4173; Vite preview proxies /api to localhost:3001 inside the container.
-CMD ["sh", "-c", "npx concurrently -k \"npx vite preview --host 0.0.0.0 --port 4173\" \"npx tsx server/index.ts\""]
+CMD ["npx", "tsx", "server/index.ts"]
