@@ -82,7 +82,12 @@ docker compose --profile prod up --build
 
 Open **`http://localhost:4173`** (Vite preview proxies `/api` to the API in the container). Set a strong **`SESSION_SECRET`** in `.env` or the environment for anything beyond local smoke tests. Real deployments still need **HTTPS** for secure cookies in the browser.
 
+**NAS / Raspberry Pi / LAN:** If you open the app as **`http://192.168.x.x:4173`** (or any non-localhost HTTP URL), the browser is **not** a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts), so **`crypto.subtle`** is missing and **register / unlock will fail** with **`AN_CRYPTO_001`**. Put a **reverse proxy** (Caddy, Nginx, NPM, Traefik) in front with **HTTPS** (Let’s Encrypt, Tailscale Serve, or a trusted LAN certificate), or access only via **`https://…`**.
+
 ### Troubleshooting
+
+**`AN_CRYPTO_001` / Web Crypto not available (register or unlock on a home server).**  
+You are almost certainly on **plain HTTP** to a **non-localhost** URL. Use **HTTPS** in front of the app (see **NAS / Raspberry Pi / LAN** above).
 
 **`http proxy error` / `ECONNREFUSED 127.0.0.1:3001` (often before login).**  
 Vite forwards `/api` to the API on port **3001**. This error means **nothing is listening there** — almost always because **`npm run dev:api` crashed** while **`npm run dev:web` kept running**. Scroll the terminal for the **`[0]`** (API) lines, not only `[1]` (Vite).

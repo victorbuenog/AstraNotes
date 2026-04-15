@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
+    // Tailscale (*.ts.net), LAN hostnames, reverse proxies — default blocks unknown Host (DNS rebinding).
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3001',
@@ -14,6 +16,7 @@ export default defineConfig({
   },
   preview: {
     host: true,
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3001',

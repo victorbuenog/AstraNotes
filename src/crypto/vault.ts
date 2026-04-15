@@ -5,9 +5,21 @@ const PBKDF2_ITERATIONS = 210_000
 const SALT_BYTES = 16
 const AES_KEY_BITS = 256
 
+function subtleUnavailableMessage(): string {
+  const base = 'Web Crypto API is not available in this browser.'
+  const g = globalThis as typeof globalThis & { isSecureContext?: boolean }
+  if (g.isSecureContext === false) {
+    return (
+      `${base} Browsers only expose it in a secure context: use HTTPS, or http://localhost. ` +
+      'Plain http:// to a LAN IP or hostname cannot be used for encryption (code AN_CRYPTO_001).'
+    )
+  }
+  return `${base} (code AN_CRYPTO_001)`
+}
+
 function getSubtle(): SubtleCrypto {
   const s = globalThis.crypto?.subtle
-  if (!s) throw new AppError(ErrorCodes.CRYPTO_UNAVAILABLE, 'Web Crypto API is not available')
+  if (!s) throw new AppError(ErrorCodes.CRYPTO_UNAVAILABLE, subtleUnavailableMessage())
   return s
 }
 

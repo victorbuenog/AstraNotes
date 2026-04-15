@@ -3,6 +3,9 @@
 # 2. On the server: make the repo name lowercase in the image URL.
 # 3. docker compose -f docker-compose.ghcr.yml --env-file .env up -d
 #
+# Web Crypto (encryption) requires a secure context: use HTTPS or http://localhost only.
+# Plain http://<LAN-IP>:4173 will fail with AN_CRYPTO_001 — put a reverse proxy with TLS in front.
+#
 # Example .env:
 #   ASTRANOTES_IMAGE=ghcr.io/youruser/your-repo:latest
 #   SESSION_SECRET=<long random string>
