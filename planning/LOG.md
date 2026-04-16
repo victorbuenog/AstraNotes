@@ -10,9 +10,9 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 
 **Markdown and future media.** Notes still use a **versioned `NoteDocument`** with a **block array**; the MVP edits the primary **markdown** block. **Image, audio, LaTeX** blocks remain type-level extension points.
 
-**UI/UX.** **Sidebar** lists notes by **last modified** with **search** (title + body, client-side), **tag filter**, **Export vault** / **Import** (JSON v1, plaintext — confirm). Each row has a **⋯** menu for **Archive** / **Restore** and **Delete**; **Delete** uses a modal (cannot be undone) with **Never ask again** stored per **username** in `localStorage` (`src/preferences/deleteConfirm.ts`). **Tags** on each note (comma-separated, normalized). **Log out** and signed-in username in the sidebar header. **Light/Dark** via `ThemeContext`. **Log in** does not show a separate unlock step; **refresh** with an active session may.
+**UI/UX.** **Sidebar** lists notes by **last modified** with **search** (title + body, client-side), **tag filter**, and **collapsible** layout (narrow viewports use a **drawer** + backdrop). **Settings** (sidebar header): **Light/Dark**, **Export vault (JSON)** / **Import vault** (v1, plaintext — confirm), and **Log out**. Each row has a **⋯** menu for **Archive** / **Restore**, **Export note…** (single note as **Markdown** with YAML front matter), and **Delete**; **Delete** uses a modal (cannot be undone) with **Never ask again** stored per **username** in `localStorage` (`src/preferences/deleteConfirm.ts`). **Tags** on each note (comma-separated, normalized) with optional **suggestions** from existing tags. **Note editor**: **Write / Split / Read**, **resizable** split pane (wide layouts), **Enter** continues markdown lists (second **Enter** on an empty item exits the list), **Saving… / Saved** on the **title** row. Signed-in **username** remains in the sidebar. **Log in** does not show a separate unlock step; **refresh** with an active session may.
 
-**Refined requirements alignment.** Implements **FR2a** (search), **FR2b** (tags), **FR7** (export/import), **FR4** (`docs/plugins.md`). **Session expiry** on save/import surfaces a clear banner message. **Decrypt** failures use `AN_CRYPTO_003` with an explicit user message. API sets **`Cache-Control: no-store`** on `/api/*`.
+**Refined requirements alignment.** Implements **FR1** (CRUD, autosave with visible status, archive/delete UX), **FR2a** (search), **FR2b** (tags + filter + normalization), **FR3** (raw vs preview vs split; preview follows editor buffer), **FR7** (versioned vault JSON export/import with confirm; **additional** single-note Markdown export for portability), **FR4** (`docs/plugins.md`), **FR6-S** (opaque ciphertext, client decrypt, session isolation). **Session expiry** on save/import surfaces a clear banner message. **Decrypt** failures use `AN_CRYPTO_003` with an explicit user message. API sets **`Cache-Control: no-store`** on `/api/*`.
 
 **Errors.** **`AppError`** + **`ErrorCodes`** include auth codes (`AN_AUTH_*`); **`ErrorBanner`** shows messages with codes.
 
@@ -25,6 +25,29 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 ---
 
 ## Log
+
+### 2026-04-15 — UI polish, settings menu, vault import/export placement, per-note Markdown export
+
+*Align the product with refined baseline behavior (FR1, FR3, FR7 UX) and document where features live.*
+
+**Requirements check (passing baseline):**
+
+| Requirement | How the current app satisfies it |
+| --- | --- |
+| **FR1** | Debounced autosave (~450 ms); **Saving… / Saved** next to the note title; archive + permanent delete (with confirmation / optional skip). |
+| **FR3** | **Write / Split / Read**; split pane is **resizable** on wide layouts; preview uses the same in-memory markdown as the editor (unsaved edits visible). |
+| **FR7** | **Export vault (JSON)** and **Import vault** remain **formatVersion: 1**, validated, with user confirmation for plaintext backup; **Export note…** adds a **documented** single-note `.md` (YAML front matter + body) without replacing the vault JSON workflow. |
+| **FR2a / FR2b** | Unchanged: client search (capped query), tags + filter, normalization in `src/types/tags.ts`. |
+| **FR6-S** | Unchanged: ciphertext on the wire/at rest on the server; decrypt in the client; 403 isolation in API tests. |
+
+**Product changes:**
+
+- **Settings menu** (`SettingsMenu.tsx`): theme toggle, **Export vault (JSON)…**, **Import vault…**, **Log out**; moved from standalone sidebar buttons.
+- **Sidebar**: optional **collapse** / **drawer** (narrow screens); **⋯** menu includes **Export note…** → downloads one Markdown file (`src/vault/noteMarkdownExport.ts`, `NotesContext.exportNoteMarkdown`).
+- **Editor** (`NoteEditor.tsx`): title row + tags + save status; tag **suggestions**; **list continuation** on Enter (`src/utils/markdownListEnter.ts` + tests); resizable **Split** divider.
+- **Docs:** this log, root `README.md`, and `planning/README.md` updated to describe the above.
+
+---
 
 ### 2026-04-15 — Planning docs sync, GitHub remote, Docker, auth UX
 

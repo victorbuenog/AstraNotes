@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
-import { ThemeProvider, useTheme } from './context/ThemeContext'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotesProvider, useNotes } from './context/NotesContext'
 import { AuthScreen } from './components/AuthScreen'
@@ -10,40 +10,71 @@ import { ErrorBanner } from './components/ErrorBanner'
 import { Vault } from './crypto/vault'
 
 function MainChrome({ onLogout }: { onLogout: () => void }) {
-  const { theme, toggle } = useTheme()
-  const { notes, selectedId, saving, lastSavedAt } = useNotes()
+  const { notes, selectedId } = useNotes()
   const { user } = useAuth()
   const selected = selectedId ? notes.find((n) => n.id === selectedId) : null
 
-  const saveLabel = saving ? 'Saving…' : lastSavedAt ? 'Saved' : ''
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [overlayMode, setOverlayMode] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 840px)')
+    const sync = () => setOverlayMode(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  const workspaceClass =
+    'app-shell__workspace' +
+    (overlayMode ? ' app-shell__workspace--overlay' : '') +
+    (!overlayMode && !sidebarOpen ? ' app-shell__workspace--sidebar-closed' : '')
+
+  const closeDrawerOnSelect = useCallback(() => {
+    if (overlayMode) setSidebarOpen(false)
+  }, [overlayMode])
 
   return (
     <div className="app-shell">
       <ErrorBanner />
       <div className="app-shell__body">
-        <Sidebar username={user?.username} onLogout={() => void onLogout()} />
-        <main className="main">
-          <header className="main__top">
-            <div className="main__meta">
-              {saveLabel && <span className="save-pill">{saveLabel}</span>}
+        {overlayMode && sidebarOpen && (
+          <div
+            className="sidebar-backdrop"
+            role="presentation"
+            aria-hidden
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <div className={workspaceClass}>
+          <Sidebar
+            username={user?.username}
+            onLogout={() => void onLogout()}
+            open={sidebarOpen}
+            onOpenChange={setSidebarOpen}
+            overlayMode={overlayMode}
+            onAfterSelectNote={closeDrawerOnSelect}
+          />
+          <main className="main">
+            {!sidebarOpen && (
               <button
                 type="button"
-                className="btn btn--ghost"
-                onClick={toggle}
-                aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                className="main__sidebar-reopen"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open sidebar"
               >
-                {theme === 'light' ? 'Dark' : 'Light'}
+                ☰
               </button>
-            </div>
-          </header>
-          {selected ? (
-            <NoteEditor key={selected.id} note={selected} />
-          ) : (
-            <div className="empty-main">
-              <p>Select a note or create a new one.</p>
-            </div>
-          )}
-        </main>
+            )}
+            {selected ? (
+              <NoteEditor key={selected.id} note={selected} />
+            ) : (
+              <div className="empty-main">
+                <p>Select a note or create a new one.</p>
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   )

@@ -18,6 +18,7 @@ import {
   parseVaultImportJson,
   serializeVaultExport,
 } from '../vault/exportFormat'
+import { noteToMarkdownExport, slugifyNoteFilename } from '../vault/noteMarkdownExport'
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
@@ -39,6 +40,7 @@ type NotesContextValue = {
   deleteNoteForever: (id: string) => Promise<void>
   exportVaultJson: () => void
   importVaultFromText: (text: string) => Promise<void>
+  exportNoteMarkdown: (note: Note) => void
   searchQuery: string
   setSearchQuery: (q: string) => void
   tagFilter: string | null
@@ -275,6 +277,17 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     URL.revokeObjectURL(url)
   }, [])
 
+  const exportNoteMarkdown = useCallback((note: Note) => {
+    const text = noteToMarkdownExport(note)
+    const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${slugifyNoteFilename(note.title)}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
+
   const importVaultFromText = useCallback(
     async (text: string) => {
       const result = parseVaultImportJson(text)
@@ -317,6 +330,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       deleteNoteForever,
       exportVaultJson,
       importVaultFromText,
+      exportNoteMarkdown,
       searchQuery,
       setSearchQuery,
       tagFilter,
@@ -340,6 +354,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       deleteNoteForever,
       exportVaultJson,
       importVaultFromText,
+      exportNoteMarkdown,
       searchQuery,
       tagFilter,
       saving,

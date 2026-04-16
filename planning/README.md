@@ -4,7 +4,7 @@
 
 AstraNotes is a **multi-user** note-taking web app: **register or log in** with a **username and password**. On **register** or **log in**, the **client** derives the encryption key and unlocks the vault in the **same** flow (no second password step). If you **reload** the page while still signed in, a short **unlock** screen asks for your password once—the session cookie does not carry the crypto key. **Note bodies** are **AES-GCM** ciphertext in **SQLite** (`data/` by default); the server stores **opaque blobs** and does not have the key. The API still enforces **auth**: each session only accesses that user’s rows (no cross-user reads or writes).
 
-The UI stays minimal: a left **sidebar** (notes by last modified, each row with a **⋯** menu for **Archive** / **Restore** and **Delete**), a **markdown** editor with **preview**, **light/dark** theme, **Log out**, and clear **error messages with stable codes** for debugging. **Delete** is not exposed next to the editor; confirming permanent delete uses a dialog (with optional **Never ask again** stored per **username** in `localStorage` on this browser).
+The UI stays minimal: a **collapsible** left **sidebar** (notes by last modified; each row has a **⋯** menu for **Archive** / **Restore**, **Export note…** (Markdown), and **Delete**), a **markdown** editor with **Write / Split / Read** and **Settings** (theme, **vault JSON** export/import, **log out**), and clear **error messages with stable codes** for debugging. **Delete** is not exposed next to the editor; confirming permanent delete uses a dialog (with optional **Never ask again** stored per **username** in `localStorage` on this browser).
 
 > **Work log:** [`LOG.md`](./LOG.md). **Refined requirements:** [`refined_requirements.md`](./refined_requirements.md). The canonical copy of this overview is the repo root [`README.md`](../README.md).
 
@@ -15,12 +15,12 @@ The UI stays minimal: a left **sidebar** (notes by last modified, each row with 
 | **Accounts** | **Register** (username + password + confirm) or **Log in**. Usernames: 3–32 chars, `[a-zA-Z0-9_-]`. Passwords: min 8 chars. Password fields support **show/hide** (Auth and Unlock screens). |
 | **Encryption** | **Web Crypto** (`src/crypto/vault.ts`): **PBKDF2** + **AES-GCM**. Per-user **salt + verifier** metadata is stored in `users.encryption_meta` (server cannot decrypt). **Log in** unlocks the vault in one step using the same password. If you **reload** the page while still signed in, the app asks for your password once more (the key is not stored in the session). |
 | **Session** | After login, the API sets an **HTTP-only session cookie** (`astranotes.sid`). The SPA calls `/api/*` with `credentials: 'include'`. |
-| **Notes** | Create and edit notes; **Archive** / **Restore** and **Delete** are available from the **⋯** menu on each sidebar row (not in the editor chrome). **Delete** removes the note **permanently** from the database (cannot be undone). The first time (per browser), a dialog asks for confirmation with **Cancel**, **Confirm**, and **Never ask again** (per signed-in **username**); if that box was checked on a prior confirmation, the next delete runs immediately. Each note is encrypted as JSON **before** `PUT`; the server stores `{ v:2, ivB64, ciphertextB64 }` plus `updated_at`. Sidebar lists active notes sorted by **updated** time (newest first). |
-| **Search / tags / export** | See root **README**: client **search** (title + body), **tags** with filter, **export/import** JSON v1, **`docs/plugins.md`**. |
-| **Autosave** | Edits are **debounced** (~450 ms) and persisted via the API; the header shows **Saving…** / **Saved**. Session expiry surfaces a clear save error. |
-| **Markdown** | Versioned **document** + **blocks**; **Write/Split/Read**; preview tracks editor state (see root README). |
+| **Notes** | Create and edit notes; **Archive** / **Restore**, **Export note…** (Markdown), and **Delete** are available from the **⋯** menu on each sidebar row (not in the editor chrome). **Delete** removes the note **permanently** from the database (cannot be undone). The first time (per browser), a dialog asks for confirmation with **Cancel**, **Confirm**, and **Never ask again** (per signed-in **username**); if that box was checked on a prior confirmation, the next delete runs immediately. Each note is encrypted as JSON **before** `PUT`; the server stores `{ v:2, ivB64, ciphertextB64 }` plus `updated_at`. Sidebar lists active notes sorted by **updated** time (newest first). |
+| **Search / tags / export** | See root **README**: client **search** (title + body), **tags** with filter and suggestions, **vault** export/import JSON v1 via **Settings**, per-note **Markdown** export via **⋯**, **`docs/plugins.md`**. |
+| **Autosave** | Edits are **debounced** (~450 ms) and persisted via the API; **Saving…** / **Saved** appears beside the **note title**. Session expiry surfaces a clear save error. |
+| **Markdown** | Versioned **document** + **blocks**; **Write/Split/Read** with resizable split (wide layouts); list **Enter** behavior; preview tracks editor state (see root README). |
 | **Future media** | **Image**, **audio**, and **LaTeX** block types exist in the type system as extension points; payloads remain JSON documents so new block kinds can land with **targeted schema/version** changes. |
-| **Theme** | **Light** / **dark** toggle; styling uses CSS variables (`ThemeContext`). |
+| **Theme** | **Light** / **dark** from **Settings**; styling uses CSS variables (`ThemeContext`). |
 | **Errors** | Failures use **`AppError`** and **`ErrorCodes`** (e.g. `AN_NOTE_002`, `AN_AUTH_001`); **`ErrorBanner`** shows user-facing text **with codes**. |
 | **Tests** | **Vitest** (jsdom for UI, **node** for `server/app.test.ts`), **Testing Library** where applicable; **`fake-indexeddb`** remains for any client tests that need it. API tests assert **ciphertext** in the DB response, not plaintext titles. |
 
@@ -99,8 +99,9 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
     │   ├── AuthScreen.tsx  # Register / log in; vault unlock inline after login (same password)
     │   ├── PasswordInput.tsx # Password field + visibility toggle
     │   ├── UnlockScreen.tsx # Password after session restore (e.g. refresh); skipped right after log-in
-    │   ├── Sidebar.tsx     # Note list, ⋯ archive/delete, archive filter, log out
-    │   ├── NoteEditor.tsx  # Title + markdown edit + preview
+    │   ├── Sidebar.tsx     # Note list, search, tag filter, collapse; ⋯ per note
+    │   ├── SettingsMenu.tsx # Theme, vault export/import, log out
+    │   ├── NoteEditor.tsx  # Title, tags, markdown edit + preview
     │   ├── BlockPreview.tsx
     │   └── ErrorBanner.tsx
     ├── context/
@@ -111,7 +112,15 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
     │   └── vault.ts        # PBKDF2 + AES-GCM encrypt/decrypt for notes
     ├── types/
     │   ├── note.ts         # Note, NoteDocument, block union, helpers
+    │   ├── tags.ts         # Tag normalization (FR2b)
     │   └── noteWire.ts     # Encrypted payload wire shape (v2)
+    ├── search/
+    │   └── noteSearch.ts   # Client-side search (FR2a)
+    ├── utils/
+    │   └── markdownListEnter.ts
+    ├── vault/
+    │   ├── exportFormat.ts
+    │   └── noteMarkdownExport.ts
     ├── errors/
     │   ├── AppError.ts
     │   └── codes.ts

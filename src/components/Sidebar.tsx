@@ -1,20 +1,27 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNotes } from '../context/NotesContext'
 import {
   MAX_SEARCH_QUERY_LENGTH,
   collectAllTags,
   noteMatchesSearch,
 } from '../search/noteSearch'
-import { parseVaultImportJson } from '../vault/exportFormat'
 import {
   setSkipDeleteConfirm,
   shouldSkipDeleteConfirm,
 } from '../preferences/deleteConfirm'
 import type { Note } from '../types/note'
+import { SettingsMenu } from './SettingsMenu'
 
 type SidebarProps = {
   username?: string
   onLogout?: () => void
+  /** When false, sidebar is hidden (desktop: zero width; narrow: off-canvas). */
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  /** Narrow viewport: sidebar overlays main instead of stacking. */
+  overlayMode: boolean
+  /** Called after a note row is activated (e.g. close drawer on mobile). */
+  onAfterSelectNote?: () => void
 }
 
 function formatTime(ts: number): string {
@@ -30,7 +37,14 @@ function formatTime(ts: number): string {
 
 type DeleteDialogState = { id: string; title: string }
 
-export function Sidebar({ username, onLogout }: SidebarProps) {
+export function Sidebar({
+  username,
+  onLogout,
+  open,
+  onOpenChange,
+  overlayMode,
+  onAfterSelectNote,
+}: SidebarProps) {
   const {
     notes,
     selectedId,
@@ -42,14 +56,12 @@ export function Sidebar({ username, onLogout }: SidebarProps) {
     setSearchQuery,
     tagFilter,
     setTagFilter,
-    exportVaultJson,
-    importVaultFromText,
+    exportNoteMarkdown,
     archiveNote,
     unarchiveNote,
     deleteNoteForever,
   } = useNotes()
 
-  const importRef = useRef<HTMLInputElement>(null)
   const allTags = useMemo(() => collectAllTags(notes), [notes])
 
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
@@ -107,53 +119,38 @@ export function Sidebar({ username, onLogout }: SidebarProps) {
     setDeleteDialog(null)
   }, [deleteDialog, neverAskAgain, username, deleteNoteForever])
 
-  const onExportClick = () => {
-    if (
-      !window.confirm(
-        'Export downloads a plaintext JSON file of all notes (decrypted on this device). Anyone with the file can read your notes. Continue?',
-      )
-    ) {
-      return
-    }
-    exportVaultJson()
-  }
-
-  const onImportPick = () => importRef.current?.click()
-
-  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    const text = await file.text()
-    const parsed = parseVaultImportJson(text)
-    if (!parsed.ok) {
-      window.alert(parsed.error)
-      return
-    }
-    if (
-      !window.confirm(
-        `Import ${parsed.data.notes.length} note(s)? Existing notes with the same id will be replaced (upsert); other notes are unchanged.`,
-      )
-    ) {
-      return
-    }
-    await importVaultFromText(text)
-  }
+  const asideClass =
+    'sidebar' +
+    (overlayMode ? ' sidebar--drawer' : '') +
+    (open ? ' is-open' : ' is-closed')
 
   return (
     <>
-      <aside className="sidebar">
+      <aside className={asideClass} aria-hidden={!open}>
         <div className="sidebar__header">
           <div className="sidebar__title-row">
             <h1 className="sidebar__brand">AstraNotes</h1>
-            {username && onLogout && (
-              <button type="button" className="btn btn--ghost btn--sm" onClick={onLogout}>
-                Log out
+            <div className="sidebar__title-actions">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm sidebar__collapse-btn"
+                onClick={() => onOpenChange(false)}
+                aria-label="Collapse sidebar"
+              >
+                ⟨⟨
               </button>
-            )}
+              {username && onLogout && <SettingsMenu onLogout={onLogout} />}
+            </div>
           </div>
           {username && <p className="sidebar__user">{username}</p>}
-          <button type="button" className="btn btn--primary" onClick={() => void createNote()}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => {
+              void createNote()
+              onAfterSelectNote?.()
+            }}
+          >
             New note
           </button>
           <div className="sidebar__search">
@@ -189,23 +186,6 @@ export function Sidebar({ username, onLogout }: SidebarProps) {
               ))}
             </select>
           </div>
-          <div className="sidebar__vault-actions">
-            <input
-              ref={importRef}
-              type="file"
-              accept="application/json,.json"
-              className="sidebar__file"
-              aria-hidden
-              tabIndex={-1}
-              onChange={(e) => void onImportFile(e)}
-            />
-            <button type="button" className="btn btn--ghost btn--sm" onClick={onExportClick}>
-              Export vault
-            </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={onImportPick}>
-              Import…
-            </button>
-          </div>
         </div>
         <label className="sidebar__toggle">
           <input
@@ -236,7 +216,10 @@ export function Sidebar({ username, onLogout }: SidebarProps) {
                   <button
                     type="button"
                     className="note-row note-row--main"
-                    onClick={() => void selectNote(n.id)}
+                    onClick={() => {
+                      void selectNote(n.id)
+                      onAfterSelectNote?.()
+                    }}
                   >
                     <span className="note-row__title">{n.title || 'Untitled'}</span>
                     <span className="note-row__time">{formatTime(n.updatedAt)}</span>
@@ -284,6 +267,18 @@ export function Sidebar({ username, onLogout }: SidebarProps) {
                             </button>
                           </li>
                         )}
+                        <li role="none">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              exportNoteMarkdown(n)
+                            }}
+                          >
+                            Export note…
+                          </button>
+                        </li>
                         <li role="none">
                           <button
                             type="button"

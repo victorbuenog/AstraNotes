@@ -2,7 +2,7 @@
 
 AstraNotes is a **multi-user** note-taking web app: **register or log in** with a **username and password**. On **register** or **log in**, the **client** derives the encryption key and unlocks the vault in the **same** flow (no second password step). If you **reload** the page while still signed in, a short **unlock** screen asks for your password once—the session cookie does not carry the crypto key. **Note bodies** are **AES-GCM** ciphertext in **SQLite** (`data/` by default); the server stores **opaque blobs** and does not have the key. The API still enforces **auth**: each session only accesses that user’s rows (no cross-user reads or writes).
 
-The UI stays minimal: a left **sidebar** (notes by last modified), a **markdown** editor with **preview**, **light/dark** theme, **Log out**, and clear **error messages with stable codes** for debugging.
+The UI stays minimal: a **collapsible** left **sidebar** (notes by last modified), a **markdown** editor with **Write / Split / Read** (resizable split on wide layouts), **Settings** (theme, **vault JSON** export/import, **log out**), and clear **error messages with stable codes** for debugging.
 
 > **Work log:** day-to-day notes live in [`planning/LOG.md`](./planning/LOG.md). **Refined requirements** (FR/NFR, traceability) are in [`planning/refined_requirements.md`](./planning/refined_requirements.md).
 
@@ -13,15 +13,15 @@ The UI stays minimal: a left **sidebar** (notes by last modified), a **markdown*
 | **Accounts** | **Register** (username + password + confirm) or **Log in**. Usernames: 3–32 chars, `[a-zA-Z0-9_-]`. Passwords: min 8 chars. |
 | **Encryption** | **Web Crypto** (`src/crypto/vault.ts`): **PBKDF2** + **AES-GCM**. Per-user **salt + verifier** metadata is stored in `users.encryption_meta` (server cannot decrypt). **Log in** unlocks the vault in one step using the same password. If you **reload** the page while still signed in, the app asks for your password once more (the key is not stored in the session). |
 | **Session** | After login, the API sets an **HTTP-only session cookie** (`astranotes.sid`). The SPA calls `/api/*` with `credentials: 'include'`. |
-| **Notes** | Create and edit notes; **Archive** hides a note from the main list (it stays in the DB and can be shown via **Show archived**; **Unarchive** restores). **Delete** removes the note **permanently** from the database (cannot be undone; UI confirms). Each note is encrypted as JSON **before** `PUT`; the server stores `{ v:2, ivB64, ciphertextB64 }` plus `updated_at`. Sidebar lists active notes sorted by **updated** time (newest first). |
+| **Notes** | Create and edit notes; **Archive** hides a note from the main list (it stays in the DB and can be shown via **Show archived**; **Unarchive** restores). **Delete** removes the note **permanently** from the database (cannot be undone; UI confirms). The **⋯** menu on each row also offers **Export note…** (single note as **Markdown** with YAML front matter). Each note is encrypted as JSON **before** `PUT`; the server stores `{ v:2, ivB64, ciphertextB64 }` plus `updated_at`. Sidebar lists active notes sorted by **updated** time (newest first). |
 | **Search (FR2a)** | Client-side filter over **title** and primary **markdown** body. **Empty search** shows the full list for the current archive filter. Queries are capped (500 chars); the server never sees the search string. |
-| **Tags (FR2b)** | Comma-separated **tags** on each note; stored in the encrypted note JSON, normalized (**lowercase**, deduped, length/count limits in `src/types/tags.ts`). **Tag filter** in the sidebar narrows the list. |
-| **Export / import (FR7)** | **Export vault** downloads `formatVersion: 1` JSON (plaintext notes — confirm dialog). **Import** merges by **note id** (upsert); other notes are unchanged. See `src/vault/exportFormat.ts`. |
-| **Autosave** | Edits are **debounced** (~450 ms) and persisted via the API; the header shows **Saving…** / **Saved**. If the **session expires**, save fails with a clear error (copy edits, sign in again). |
-| **Markdown** | Each note uses a **versioned document** with a **block** array; the MVP edits the primary **markdown** block. **Write / Split / Read** modes: preview uses the same in-memory note as you type (keystrokes update state before the debounced save). GFM via `react-markdown` / `remark-gfm`. Remote images in preview follow normal `<img>` rules (use HTTPS sources you trust). |
+| **Tags (FR2b)** | Comma-separated **tags** on each note; stored in the encrypted note JSON, normalized (**lowercase**, deduped, length/count limits in `src/types/tags.ts`). **Tag filter** in the sidebar narrows the list. The tag field can **suggest** existing tags while typing. |
+| **Export / import (FR7)** | **Settings → Export vault (JSON)** downloads `formatVersion: 1` JSON (plaintext notes — confirm dialog). **Import vault** merges by **note id** (upsert); other notes are unchanged. See `src/vault/exportFormat.ts`. **Export note…** (sidebar ⋯) downloads one `.md` per note (`src/vault/noteMarkdownExport.ts`). |
+| **Autosave** | Edits are **debounced** (~450 ms) and persisted via the API; **Saving…** / **Saved** appears beside the **note title**. If the **session expires**, save fails with a clear error (copy edits, sign in again). |
+| **Markdown** | Each note uses a **versioned document** with a **block** array; the MVP edits the primary **markdown** block. **Write / Split / Read** modes: preview uses the same in-memory note as you type (keystrokes update state before the debounced save). **Split** view has a **draggable** divider on wide layouts. **Enter** in a list continues list markers; a second **Enter** on an empty list line exits the list. GFM via `react-markdown` / `remark-gfm`. Remote images in preview follow normal `<img>` rules (use HTTPS sources you trust). |
 | **Plugins (FR4)** | Extension points for block types and the note document are described in [`docs/plugins.md`](./docs/plugins.md). |
 | **Future media** | **Image**, **audio**, and **LaTeX** block types exist in the type system as extension points; payloads remain JSON documents so new block kinds can land with **targeted schema/version** changes. |
-| **Theme** | **Light** / **dark** toggle; styling uses CSS variables (`ThemeContext`). |
+| **Theme** | **Light** / **dark** from **Settings**; styling uses CSS variables (`ThemeContext`). |
 | **Errors** | Failures use **`AppError`** and **`ErrorCodes`** (e.g. `AN_NOTE_002`, `AN_AUTH_001`); **`ErrorBanner`** shows user-facing text **with codes**. |
 | **Tests** | **Vitest** (jsdom for UI, **node** for `server/app.test.ts`), **Testing Library** where applicable; **`fake-indexeddb`** remains for any client tests that need it. API tests assert **ciphertext** in the DB response, not plaintext titles. |
 
@@ -163,8 +163,9 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
     ├── components/
     │   ├── AuthScreen.tsx  # Register / log in; vault unlock inline after login (same password)
     │   ├── UnlockScreen.tsx # Password after session restore (e.g. refresh); skipped right after log-in
-    │   ├── Sidebar.tsx     # Note list, archive filter, log out
-    │   ├── NoteEditor.tsx  # Title + markdown edit + preview
+    │   ├── Sidebar.tsx     # Note list, search, tag filter, collapse; ⋯ per note
+    │   ├── SettingsMenu.tsx # Theme, vault export/import, log out
+    │   ├── NoteEditor.tsx  # Title, tags, markdown edit + preview
     │   ├── BlockPreview.tsx
     │   └── ErrorBanner.tsx
     ├── context/
@@ -179,8 +180,11 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
     │   └── noteWire.ts     # Encrypted payload wire shape (v2)
     ├── search/
     │   └── noteSearch.ts   # Client-side search helpers (FR2a)
+    ├── utils/
+    │   └── markdownListEnter.ts # List continuation on Enter in the markdown editor
     ├── vault/
-    │   └── exportFormat.ts # Export/import JSON v1 (FR7)
+    │   ├── exportFormat.ts # Export/import JSON v1 (FR7)
+    │   └── noteMarkdownExport.ts # Single-note Markdown + YAML export
     ├── errors/
     │   ├── AppError.ts
     │   └── codes.ts
@@ -215,7 +219,7 @@ npm run docker:prod  # Docker Compose profile prod: Express serves SPA + API on 
 - **Sessions** use a signed cookie; treat `SESSION_SECRET` like a key in production. The cookie does **not** carry the vault encryption key—only **AuthScreen** (at log-in) and **UnlockScreen** (after reload with an active session) derive it from your password.
 - **Isolation:** note rows are tied to `user_id` from the session; attempts to modify another user’s note id return **403**. JSON responses for `/api/notes` use **`Cache-Control: no-store`** so lists stay fresh across tabs.
 - **Transport:** use **HTTPS** in production so cookies and ciphertext are not exposed on the wire.
-- **Threat model:** anyone with **root/SQLite file read** sees ciphertext only; anyone with the **user’s password** (or a live unlocked browser tab) can decrypt. **Not** protected: contents in **RAM** while the tab is open, **screenshots**, **exported JSON** (plaintext), or malware on the device. Failed decrypt shows a clear error (`AN_CRYPTO_003`). **IndexedDB-only** legacy data from before the server-backed app is **not** migrated automatically.
+- **Threat model:** anyone with **root/SQLite file read** sees ciphertext only; anyone with the **user’s password** (or a live unlocked browser tab) can decrypt. **Not** protected: contents in **RAM** while the tab is open, **screenshots**, **exported JSON or Markdown** (plaintext), or malware on the device. Failed decrypt shows a clear error (`AN_CRYPTO_003`). **IndexedDB-only** legacy data from before the server-backed app is **not** migrated automatically.
 - **FR6-S vs FR6-P (planning):** today’s app implements **server opaque ciphertext + client decrypt** (FR6-S). A future **per-note passphrase** plugin (FR6-P) would be an add-on on top of the same note model.
 
 ---
