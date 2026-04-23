@@ -73,14 +73,18 @@ export function Sidebar({
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null)
   const [neverAskAgain, setNeverAskAgain] = useState(false)
 
-  const visible = useMemo(() => {
+  const pool = useMemo(() => {
     return notes
       .filter((n) => (showArchived ? n.archived : !n.archived))
       .filter((n) => n.private === privateVaultOpen)
       .filter((n) => (tagFilter ? n.tags.includes(tagFilter) : true))
-      .filter((n) => noteMatchesSearch(n, searchQuery))
       .sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [notes, showArchived, privateVaultOpen, tagFilter, searchQuery])
+  }, [notes, showArchived, privateVaultOpen, tagFilter])
+
+  const visible = useMemo(
+    () => pool.filter((n) => noteMatchesSearch(n, searchQuery)),
+    [pool, searchQuery],
+  )
 
   useEffect(() => {
     if (!menuOpenId) return
@@ -221,7 +225,7 @@ export function Sidebar({
         <nav className="sidebar__list" aria-label="Notes">
           {visible.length === 0 ? (
             <p className="sidebar__empty">
-              {notes.filter((n) => (showArchived ? n.archived : !n.archived)).filter((n) => n.private === privateVaultOpen).length === 0
+              {pool.length === 0
                 ? privateVaultOpen
                   ? 'No private notes.'
                   : showArchived

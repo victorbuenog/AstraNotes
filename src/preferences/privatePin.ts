@@ -30,7 +30,7 @@ function normalizePin(pin: string): string {
 }
 
 export function isPrivatePinFormat(pin: string): boolean {
-  return /^\d{4,12}$/.test(pin)
+  return /^\d{4,12}$/.test(pin.trim())
 }
 
 function readStored(username: string | undefined): StoredPin | null {

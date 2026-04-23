@@ -83,13 +83,10 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const [error, setError] = useState<AppErrorState>(null)
   const [privateVaultOpen, setPrivateVaultOpen] = useState(false)
   const [privatePinVersion, setPrivatePinVersion] = useState(0)
+  const [hasPrivatePin, setHasPrivatePinState] = useState(() => hasStoredPrivatePin(user?.username))
   const pendingRef = useRef<Map<string, Note>>(new Map())
   const notesRef = useRef<Note[]>([])
   const username = user?.username
-  const hasPrivatePin = useMemo(
-    () => hasStoredPrivatePin(username),
-    [username, privatePinVersion],
-  )
 
   useEffect(() => {
     notesRef.current = notes
@@ -360,6 +357,10 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   useEffect(() => {
     setPrivateVaultOpen(false)
   }, [username])
+
+  useEffect(() => {
+    setHasPrivatePinState(hasStoredPrivatePin(username))
+  }, [username, privatePinVersion])
 
   useEffect(() => {
     if (!selectedId) return
