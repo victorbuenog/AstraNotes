@@ -52,6 +52,10 @@ export function Sidebar({
     createNote,
     showArchived,
     setShowArchived,
+    privateVaultOpen,
+    openPrivateVault,
+    closePrivateVault,
+    hasPrivatePin,
     searchQuery,
     setSearchQuery,
     tagFilter,
@@ -59,6 +63,7 @@ export function Sidebar({
     exportNoteMarkdown,
     archiveNote,
     unarchiveNote,
+    setNotePrivate,
     deleteNoteForever,
   } = useNotes()
 
@@ -68,13 +73,18 @@ export function Sidebar({
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null)
   const [neverAskAgain, setNeverAskAgain] = useState(false)
 
-  const visible = useMemo(() => {
+  const pool = useMemo(() => {
     return notes
       .filter((n) => (showArchived ? n.archived : !n.archived))
+      .filter((n) => n.private === privateVaultOpen)
       .filter((n) => (tagFilter ? n.tags.includes(tagFilter) : true))
-      .filter((n) => noteMatchesSearch(n, searchQuery))
       .sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [notes, showArchived, tagFilter, searchQuery])
+  }, [notes, showArchived, privateVaultOpen, tagFilter])
+
+  const visible = useMemo(
+    () => pool.filter((n) => noteMatchesSearch(n, searchQuery)),
+    [pool, searchQuery],
+  )
 
   useEffect(() => {
     if (!menuOpenId) return
@@ -123,6 +133,19 @@ export function Sidebar({
     'sidebar' +
     (overlayMode ? ' sidebar--drawer' : '') +
     (open ? ' is-open' : ' is-closed')
+
+  const togglePrivateVault = useCallback(async () => {
+    if (privateVaultOpen) {
+      closePrivateVault()
+      return
+    }
+    if (!hasPrivatePin) {
+      window.alert('Set a private-vault PIN in Settings first.')
+      return
+    }
+    const ok = await openPrivateVault()
+    if (!ok) window.alert('Invalid PIN or canceled.')
+  }, [privateVaultOpen, closePrivateVault, hasPrivatePin, openPrivateVault])
 
   return (
     <>
@@ -195,11 +218,17 @@ export function Sidebar({
           />
           Show archived
         </label>
+        <label className="sidebar__toggle">
+          <input type="checkbox" checked={privateVaultOpen} onChange={() => void togglePrivateVault()} />
+          Private vault {privateVaultOpen ? '(open)' : '(locked)'}
+        </label>
         <nav className="sidebar__list" aria-label="Notes">
           {visible.length === 0 ? (
             <p className="sidebar__empty">
-              {notes.filter((n) => (showArchived ? n.archived : !n.archived)).length === 0
-                ? showArchived
+              {pool.length === 0
+                ? privateVaultOpen
+                  ? 'No private notes.'
+                  : showArchived
                   ? 'No archived notes.'
                   : 'No notes yet.'
                 : 'No notes match search or tag filter.'}
@@ -277,6 +306,18 @@ export function Sidebar({
                             }}
                           >
                             Export note…
+                          </button>
+                        </li>
+                        <li role="none">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpenId(null)
+                              void setNotePrivate(n.id, !n.private)
+                            }}
+                          >
+                            {n.private ? 'Remove from private vault' : 'Move to private vault'}
                           </button>
                         </li>
                         <li role="none">

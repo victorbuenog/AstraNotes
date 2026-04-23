@@ -48,6 +48,7 @@ export type Note = {
   /** Normalized lowercase tags (see `src/types/tags.ts`). */
   tags: string[]
   archived: boolean
+  private: boolean
   createdAt: number
   updatedAt: number
   document: NoteDocument
@@ -73,6 +74,7 @@ export function newNote(partial?: Partial<Pick<Note, 'title' | 'tags'>>): Note {
     title: partial?.title?.trim() || 'Untitled',
     tags: partial?.tags !== undefined ? normalizeTags(partial.tags) : [],
     archived: false,
+    private: false,
     createdAt: now,
     updatedAt: now,
     document: createEmptyDocument(),
@@ -82,7 +84,8 @@ export function newNote(partial?: Partial<Pick<Note, 'title' | 'tags'>>): Note {
 /** Ensure tags exist on notes loaded from older payloads. */
 export function migrateNoteShape(raw: Note): Note {
   const tags = Array.isArray(raw.tags) ? normalizeTags(raw.tags.map(String)) : []
-  return { ...raw, tags }
+  const isPrivate = typeof raw.private === 'boolean' ? raw.private : false
+  return { ...raw, tags, private: isPrivate }
 }
 
 /** Single markdown block text helper for MVP editor */

@@ -22,6 +22,13 @@ import { noteToMarkdownExport, slugifyNoteFilename } from '../vault/noteMarkdown
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
+import { useAuth } from './AuthContext'
+import {
+  hasPrivatePin as hasStoredPrivatePin,
+  isPrivatePinFormat,
+  setPrivatePin as storePrivatePin,
+  verifyPrivatePin,
+} from '../preferences/privatePin'
 
 export type AppErrorState = { message: string; code: string } | null
 
@@ -37,6 +44,7 @@ type NotesContextValue = {
   flushSave: () => Promise<void>
   archiveNote: (id: string) => Promise<void>
   unarchiveNote: (id: string) => Promise<void>
+  setNotePrivate: (id: string, isPrivate: boolean) => Promise<void>
   deleteNoteForever: (id: string) => Promise<void>
   exportVaultJson: () => void
   importVaultFromText: (text: string) => Promise<void>
@@ -51,6 +59,12 @@ type NotesContextValue = {
   clearError: () => void
   showArchived: boolean
   setShowArchived: (v: boolean) => void
+  privateVaultOpen: boolean
+  openPrivateVault: () => Promise<boolean>
+  closePrivateVault: () => void
+  hasPrivatePin: boolean
+  setPrivatePin: (pin: string) => Promise<boolean>
+  resetPrivatePinAndWipe: (nextPin: string) => Promise<boolean>
 }
 
 const NotesContext = createContext<NotesContextValue | null>(null)
@@ -58,6 +72,7 @@ const NotesContext = createContext<NotesContextValue | null>(null)
 const AUTOSAVE_MS = 450
 
 export function NotesProvider({ vault, children }: { vault: Vault; children: ReactNode }) {
+  const { user } = useAuth()
   const [notes, setNotes] = useState<Note[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -66,8 +81,12 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const [searchQuery, setSearchQuery] = useState('')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [error, setError] = useState<AppErrorState>(null)
+  const [privateVaultOpen, setPrivateVaultOpen] = useState(false)
+  const [privatePinVersion, setPrivatePinVersion] = useState(0)
+  const [hasPrivatePin, setHasPrivatePinState] = useState(() => hasStoredPrivatePin(user?.username))
   const pendingRef = useRef<Map<string, Note>>(new Map())
   const notesRef = useRef<Note[]>([])
+  const username = user?.username
 
   useEffect(() => {
     notesRef.current = notes
@@ -166,13 +185,18 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const selectNote = useCallback(
     async (id: string | null) => {
       await flushSave()
+      const nextSelected = id ? notesRef.current.find((n) => n.id === id) : null
+      if (privateVaultOpen && (!nextSelected || !nextSelected.private)) {
+        setPrivateVaultOpen(false)
+      }
       setSelectedId(id)
     },
-    [flushSave],
+    [flushSave, privateVaultOpen],
   )
 
   const createNote = useCallback(async () => {
     if (!vault.isUnlocked()) return
+    setPrivateVaultOpen(false)
     const note = newNote()
     try {
       await api.saveNote(vault, note)
@@ -240,6 +264,25 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     [flushSave, persistNote],
   )
 
+  const setNotePrivate = useCallback(
+    async (id: string, isPrivate: boolean) => {
+      await flushSave()
+      const current = notesRef.current.find((n) => n.id === id)
+      if (!current) return
+      const next = { ...current, private: isPrivate, updatedAt: Date.now() }
+      await persistNote(next)
+      setNotes((prev) =>
+        prev.map((n) => (n.id === id ? next : n)).sort((a, b) => b.updatedAt - a.updatedAt),
+      )
+      if (isPrivate) {
+        setSelectedId((sel) => (sel === id ? null : sel))
+      } else if (privateVaultOpen) {
+        setPrivateVaultOpen(false)
+      }
+    },
+    [flushSave, persistNote, privateVaultOpen],
+  )
+
   const deleteNoteForever = useCallback(
     async (id: string) => {
       await flushSave()
@@ -261,6 +304,76 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     },
     [flushSave, report],
   )
+
+  const closePrivateVault = useCallback(() => {
+    setPrivateVaultOpen(false)
+  }, [])
+
+  const openPrivateVault = useCallback(async (): Promise<boolean> => {
+    if (!hasStoredPrivatePin(username)) return false
+    const pin = window.prompt('Enter PIN to open private vault')
+    if (pin === null) return false
+    const ok = await verifyPrivatePin(username, pin)
+    if (!ok) return false
+    setPrivateVaultOpen(true)
+    return true
+  }, [username])
+
+  const setPrivatePin = useCallback(
+    async (pin: string): Promise<boolean> => {
+      const ok = await storePrivatePin(username, pin)
+      if (ok) setPrivatePinVersion((v) => v + 1)
+      return ok
+    },
+    [username],
+  )
+
+  const resetPrivatePinAndWipe = useCallback(
+    async (nextPin: string): Promise<boolean> => {
+      if (!isPrivatePinFormat(nextPin.trim())) return false
+      await flushSave()
+      const ids = notesRef.current.filter((n) => n.private).map((n) => n.id)
+      try {
+        for (const id of ids) {
+          await api.deleteNote(id)
+        }
+      } catch (e) {
+        const msg = e instanceof AppError ? e.message : String(e)
+        const code = e instanceof AppError ? e.code : ErrorCodes.NOTE_DELETE_FAILED
+        report(msg, code)
+        return false
+      }
+      setNotes((prev) => prev.filter((n) => !n.private))
+      setPrivateVaultOpen(false)
+      const ok = await storePrivatePin(username, nextPin)
+      if (!ok) return false
+      setPrivatePinVersion((v) => v + 1)
+      setSelectedId(null)
+      return true
+    },
+    [flushSave, username, report],
+  )
+
+  useEffect(() => {
+    setPrivateVaultOpen(false)
+  }, [username])
+
+  useEffect(() => {
+    setHasPrivatePinState(hasStoredPrivatePin(username))
+  }, [username, privatePinVersion])
+
+  useEffect(() => {
+    if (!selectedId) return
+    const selected = notes.find((n) => n.id === selectedId)
+    if (!selected) return
+    if (privateVaultOpen && !selected.private) {
+      setSelectedId(notes.filter((n) => n.private).sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id ?? null)
+      return
+    }
+    if (!privateVaultOpen && selected.private) {
+      setSelectedId(notes.filter((n) => !n.private).sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id ?? null)
+    }
+  }, [privateVaultOpen, notes, selectedId])
 
   const clearError = useCallback(() => setError(null), [])
 
@@ -327,6 +440,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       flushSave,
       archiveNote,
       unarchiveNote,
+      setNotePrivate,
       deleteNoteForever,
       exportVaultJson,
       importVaultFromText,
@@ -341,6 +455,12 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       clearError,
       showArchived,
       setShowArchived,
+      privateVaultOpen,
+      openPrivateVault,
+      closePrivateVault,
+      hasPrivatePin,
+      setPrivatePin,
+      resetPrivatePinAndWipe,
     }),
     [
       notes,
@@ -351,6 +471,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       flushSave,
       archiveNote,
       unarchiveNote,
+      setNotePrivate,
       deleteNoteForever,
       exportVaultJson,
       importVaultFromText,
@@ -362,6 +483,12 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       error,
       clearError,
       showArchived,
+      privateVaultOpen,
+      openPrivateVault,
+      closePrivateVault,
+      hasPrivatePin,
+      setPrivatePin,
+      resetPrivatePinAndWipe,
     ],
   )
 
