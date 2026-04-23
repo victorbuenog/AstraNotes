@@ -36,6 +36,7 @@ function formatTime(ts: number): string {
 }
 
 type DeleteDialogState = { id: string; title: string }
+type VaultPinDialogState = { pin: string; error: string | null; busy: boolean }
 
 export function Sidebar({
   username,
@@ -72,6 +73,7 @@ export function Sidebar({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null)
   const [neverAskAgain, setNeverAskAgain] = useState(false)
+  const [vaultPinDialog, setVaultPinDialog] = useState<VaultPinDialogState | null>(null)
 
   const pool = useMemo(() => {
     return notes
@@ -140,12 +142,10 @@ export function Sidebar({
       return
     }
     if (!hasPrivatePin) {
-      window.alert('Set a private-vault PIN in Settings first.')
       return
     }
-    const ok = await openPrivateVault()
-    if (!ok) window.alert('Invalid PIN or canceled.')
-  }, [privateVaultOpen, closePrivateVault, hasPrivatePin, openPrivateVault])
+    setVaultPinDialog({ pin: '', error: null, busy: false })
+  }, [privateVaultOpen, closePrivateVault, hasPrivatePin])
 
   return (
     <>
@@ -222,6 +222,9 @@ export function Sidebar({
           <input type="checkbox" checked={privateVaultOpen} onChange={() => void togglePrivateVault()} />
           Private vault {privateVaultOpen ? '(open)' : '(locked)'}
         </label>
+        {!hasPrivatePin && (
+          <p className="sidebar__empty">Set a private vault PIN in Settings to enable locked notes.</p>
+        )}
         <nav className="sidebar__list" aria-label="Notes">
           {visible.length === 0 ? (
             <p className="sidebar__empty">
@@ -376,6 +379,86 @@ export function Sidebar({
                 Confirm
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {vaultPinDialog && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => setVaultPinDialog(null)}
+        >
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="private-vault-unlock-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="private-vault-unlock-title" className="modal__title">
+              Unlock private vault
+            </h2>
+            <p className="modal__body">Enter your PIN to open private notes.</p>
+            {vaultPinDialog.error && (
+              <div className="vault-card__error" role="alert">
+                {vaultPinDialog.error}
+              </div>
+            )}
+            <form
+              className="vault-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void (async () => {
+                  if (!vaultPinDialog.pin.trim()) {
+                    setVaultPinDialog((cur) =>
+                      cur ? { ...cur, error: 'PIN is required.' } : cur,
+                    )
+                    return
+                  }
+                  setVaultPinDialog((cur) => (cur ? { ...cur, busy: true, error: null } : cur))
+                  const ok = await openPrivateVault(vaultPinDialog.pin)
+                  if (ok) {
+                    setVaultPinDialog(null)
+                    return
+                  }
+                  setVaultPinDialog((cur) =>
+                    cur ? { ...cur, busy: false, error: 'Invalid PIN.' } : cur,
+                  )
+                })()
+              }}
+            >
+              <label className="field">
+                <span>PIN</span>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={vaultPinDialog.pin}
+                  onChange={(e) =>
+                    setVaultPinDialog((cur) =>
+                      cur
+                        ? { ...cur, pin: e.target.value.replace(/\D+/g, '').slice(0, 12), error: null }
+                        : cur,
+                    )
+                  }
+                  required
+                  minLength={4}
+                  maxLength={12}
+                />
+              </label>
+              <div className="modal__actions">
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => setVaultPinDialog(null)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn--primary" disabled={vaultPinDialog.busy}>
+                  {vaultPinDialog.busy ? 'Checking…' : 'Unlock'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

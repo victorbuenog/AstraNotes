@@ -13,6 +13,19 @@ type Props = {
   onLogout: () => void
 }
 
+type PrivatePinModalState = {
+  mode: 'set' | 'reset'
+  pin: string
+  error: string | null
+  success: string | null
+  busy: boolean
+}
+
+type InfoModalState = {
+  title: string
+  message: string
+}
+
 export function SettingsMenu({ onLogout }: Props) {
   const { theme, toggle } = useTheme()
   const {
@@ -25,6 +38,8 @@ export function SettingsMenu({ onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const [noteFontFamily, setNoteFontFamily] = useState<NoteFontFamily>(() => readEditorAppearance().noteFontFamily)
   const [noteFontSizePx, setNoteFontSizePx] = useState(() => readEditorAppearance().noteFontSizePx)
+  const [privatePinModal, setPrivatePinModal] = useState<PrivatePinModalState | null>(null)
+  const [infoModal, setInfoModal] = useState<InfoModalState | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
 
@@ -76,7 +91,10 @@ export function SettingsMenu({ onLogout }: Props) {
     const text = await file.text()
     const parsed = parseVaultImportJson(text)
     if (!parsed.ok) {
-      window.alert(parsed.error)
+      setInfoModal({
+        title: 'Import failed',
+        message: parsed.error,
+      })
       return
     }
     if (
@@ -90,30 +108,14 @@ export function SettingsMenu({ onLogout }: Props) {
     await importVaultFromText(text)
   }
 
-  const onSetPrivatePin = async () => {
-    const pin = window.prompt('Set private vault PIN (4-12 digits):')
-    if (pin === null) return
-    const ok = await setPrivatePin(pin)
-    if (!ok) window.alert('PIN must be 4-12 digits.')
-    else window.alert('Private vault PIN set.')
+  const openSetPrivatePinModal = () => {
+    setOpen(false)
+    setPrivatePinModal({ mode: 'set', pin: '', error: null, success: null, busy: false })
   }
 
-  const onResetPrivatePin = async () => {
-    if (
-      !window.confirm(
-        'Resetting the private vault PIN permanently deletes all existing private notes. Continue?',
-      )
-    ) {
-      return
-    }
-    const pin = window.prompt('Enter new private vault PIN (4-12 digits):')
-    if (pin === null) return
-    const ok = await resetPrivatePinAndWipe(pin)
-    if (!ok) {
-      window.alert('Reset failed. PIN must be 4-12 digits, and private notes must be removable.')
-      return
-    }
-    window.alert('Private vault PIN reset. Existing private notes were deleted.')
+  const openResetPrivatePinModal = () => {
+    setOpen(false)
+    setPrivatePinModal({ mode: 'reset', pin: '', error: null, success: null, busy: false })
   }
 
   return (
@@ -164,7 +166,7 @@ export function SettingsMenu({ onLogout }: Props) {
           <li className="settings-menu__sep" role="separator" />
           <li role="none" className="settings-menu__section">
             <label className="settings-menu__field">
-              Note font
+              Read view font
               <select
                 className="settings-menu__select"
                 value={noteFontFamily}
@@ -176,7 +178,7 @@ export function SettingsMenu({ onLogout }: Props) {
               </select>
             </label>
             <label className="settings-menu__field">
-              Note size ({noteFontSizePx}px)
+              Read view size ({noteFontSizePx}px)
               <input
                 className="settings-menu__range"
                 type="range"
@@ -190,13 +192,23 @@ export function SettingsMenu({ onLogout }: Props) {
           </li>
           <li className="settings-menu__sep" role="separator" />
           <li role="none">
-            <button type="button" role="menuitem" className="settings-menu__item" onClick={() => void onSetPrivatePin()}>
+            <button
+              type="button"
+              role="menuitem"
+              className="settings-menu__item"
+              onClick={openSetPrivatePinModal}
+            >
               {hasPrivatePin ? 'Change private PIN…' : 'Set private PIN…'}
             </button>
           </li>
           {hasPrivatePin && (
             <li role="none">
-              <button type="button" role="menuitem" className="settings-menu__item" onClick={() => void onResetPrivatePin()}>
+              <button
+                type="button"
+                role="menuitem"
+                className="settings-menu__item"
+                onClick={openResetPrivatePinModal}
+              >
                 Reset private PIN (wipe private notes)…
               </button>
             </li>
@@ -216,6 +228,149 @@ export function SettingsMenu({ onLogout }: Props) {
             </button>
           </li>
         </ul>
+      )}
+      {privatePinModal && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => {
+            if (!privatePinModal.busy) setPrivatePinModal(null)
+          }}
+        >
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="private-pin-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="private-pin-modal-title" className="modal__title">
+              {privatePinModal.mode === 'set' ? 'Set private vault PIN' : 'Reset private vault PIN'}
+            </h2>
+            <p className="modal__body">
+              {privatePinModal.mode === 'set'
+                ? 'Choose a PIN with 4 to 12 digits.'
+                : 'Resetting the PIN permanently deletes existing private notes. Enter your new PIN to continue.'}
+            </p>
+            {privatePinModal.error && (
+              <div className="vault-card__error" role="alert">
+                {privatePinModal.error}
+              </div>
+            )}
+            {privatePinModal.success && (
+              <div className="vault-card__error" role="status">
+                {privatePinModal.success}
+              </div>
+            )}
+            <form
+              className="vault-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void (async () => {
+                  const pin = privatePinModal.pin.trim()
+                  if (!pin) {
+                    setPrivatePinModal((cur) => (cur ? { ...cur, error: 'PIN is required.' } : cur))
+                    return
+                  }
+                  setPrivatePinModal((cur) =>
+                    cur ? { ...cur, busy: true, error: null, success: null } : cur,
+                  )
+                  const ok =
+                    privatePinModal.mode === 'set'
+                      ? await setPrivatePin(pin)
+                      : await resetPrivatePinAndWipe(pin)
+                  if (!ok) {
+                    setPrivatePinModal((cur) =>
+                      cur
+                        ? {
+                            ...cur,
+                            busy: false,
+                            error:
+                              cur.mode === 'set'
+                                ? 'PIN must be 4-12 digits.'
+                                : 'Reset failed. PIN must be 4-12 digits, and private notes must be removable.',
+                          }
+                        : cur,
+                    )
+                    return
+                  }
+                  setPrivatePinModal((cur) =>
+                    cur
+                      ? {
+                          ...cur,
+                          busy: false,
+                          pin: '',
+                          error: null,
+                          success:
+                            cur.mode === 'set'
+                              ? 'Private vault PIN saved.'
+                              : 'Private vault PIN reset. Existing private notes were deleted.',
+                        }
+                      : cur,
+                  )
+                })()
+              }}
+            >
+              <label className="field">
+                <span>PIN</span>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={privatePinModal.pin}
+                  onChange={(e) =>
+                    setPrivatePinModal((cur) =>
+                      cur
+                        ? { ...cur, pin: e.target.value.replace(/\D+/g, '').slice(0, 12), error: null }
+                        : cur,
+                    )
+                  }
+                  required
+                  minLength={4}
+                  maxLength={12}
+                />
+              </label>
+              <div className="modal__actions">
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => setPrivatePinModal(null)}
+                  disabled={privatePinModal.busy}
+                >
+                  Close
+                </button>
+                <button type="submit" className="btn btn--primary" disabled={privatePinModal.busy}>
+                  {privatePinModal.busy
+                    ? 'Please wait…'
+                    : privatePinModal.mode === 'set'
+                      ? 'Save PIN'
+                      : 'Reset PIN'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {infoModal && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setInfoModal(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-info-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="settings-info-modal-title" className="modal__title">
+              {infoModal.title}
+            </h2>
+            <p className="modal__body">{infoModal.message}</p>
+            <div className="modal__actions">
+              <button type="button" className="btn btn--primary" onClick={() => setInfoModal(null)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

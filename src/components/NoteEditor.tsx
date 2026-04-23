@@ -249,16 +249,18 @@ export function NoteEditor({ note }: Props) {
         }
         style={splitGridStyle}
       >
-        <textarea
-          className="editor__textarea"
-          value={markdown}
-          onChange={(e) => handleBody(e.target.value)}
-          onKeyDown={onBodyKeyDown}
-          onBlur={() => void flushSave()}
-          placeholder="Write markdown…"
-          aria-label="Markdown body"
-          spellCheck
-        />
+        {mode !== 'preview' && (
+          <textarea
+            className="editor__textarea"
+            value={markdown}
+            onChange={(e) => handleBody(e.target.value)}
+            onKeyDown={onBodyKeyDown}
+            onBlur={() => void flushSave()}
+            placeholder="Write markdown…"
+            aria-label="Markdown body"
+            spellCheck
+          />
+        )}
         {showSplitResizer && (
           <div
             className="editor__splitter"
@@ -269,7 +271,7 @@ export function NoteEditor({ note }: Props) {
             onPointerDown={onSplitPointerDown}
           />
         )}
-        {(mode === 'preview' || mode === 'split') && (
+        {mode !== 'edit' && (
           <div className="editor__preview-scroll">{previews}</div>
         )}
       </div>

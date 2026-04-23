@@ -60,7 +60,7 @@ type NotesContextValue = {
   showArchived: boolean
   setShowArchived: (v: boolean) => void
   privateVaultOpen: boolean
-  openPrivateVault: () => Promise<boolean>
+  openPrivateVault: (pin: string) => Promise<boolean>
   closePrivateVault: () => void
   hasPrivatePin: boolean
   setPrivatePin: (pin: string) => Promise<boolean>
@@ -309,10 +309,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     setPrivateVaultOpen(false)
   }, [])
 
-  const openPrivateVault = useCallback(async (): Promise<boolean> => {
+  const openPrivateVault = useCallback(async (pin: string): Promise<boolean> => {
     if (!hasStoredPrivatePin(username)) return false
-    const pin = window.prompt('Enter PIN to open private vault')
-    if (pin === null) return false
     const ok = await verifyPrivatePin(username, pin)
     if (!ok) return false
     setPrivateVaultOpen(true)

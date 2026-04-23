@@ -26,6 +26,17 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 
 ## Log
 
+### 2026-04-23 — Read-mode correction, font scope fix, private PIN modal flow
+
+*Align the editor and private-vault UX with the intended behavior and remove browser popup dependencies for PIN operations.*
+
+- **Read mode behavior:** `Read` now renders **formatted Markdown only** (no source textarea). `Write` keeps raw editing; `Split` keeps editor + preview.
+- **Font scope:** configurable note font family/size now apply to **Read/preview rendering only**. Source editing in the textarea always uses a stable **monospace** font for readability consistency.
+- **Private vault PIN UX:** browser `prompt/alert` for PIN actions was removed. Private vault open/set/reset now use in-app modal dialogs with inline validation and status feedback.
+- **Planning alignment:** requirement notes and implementation snapshot were updated to reflect that `Read` is non-editing by default and that PIN interactions avoid browser popups.
+
+---
+
 ### 2026-04-15 — UI polish, settings menu, vault import/export placement, per-note Markdown export
 
 *Align the product with refined baseline behavior (FR1, FR3, FR7 UX) and document where features live.*

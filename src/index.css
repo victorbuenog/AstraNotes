@@ -703,8 +703,8 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.75rem;
-  font-family: var(--note-font-family);
-  font-size: var(--note-font-size);
+  font-family: var(--mono);
+  font-size: 0.95rem;
   line-height: 1.5;
   background: var(--surface);
   color: inherit;
