@@ -11,6 +11,7 @@ describe('note helpers', () => {
   it('newNote has timestamps and title', () => {
     const n = newNote({ title: '  Hello  ' })
     expect(n.title).toBe('Hello')
+    expect(n.private).toBe(false)
     expect(n.createdAt).toBeLessThanOrEqual(Date.now())
   })
 

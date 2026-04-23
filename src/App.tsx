@@ -59,7 +59,7 @@ function MainChrome({ onLogout }: { onLogout: () => void }) {
             {!sidebarOpen && (
               <button
                 type="button"
-                className="main__sidebar-reopen"
+                className="btn btn--ghost btn--sm main__sidebar-reopen"
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Open sidebar"
               >

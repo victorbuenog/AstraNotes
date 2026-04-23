@@ -38,6 +38,7 @@ function isNoteish(x: unknown): x is Note {
     typeof o.id === 'string' &&
     typeof o.title === 'string' &&
     typeof o.archived === 'boolean' &&
+    (typeof o.private === 'boolean' || o.private === undefined) &&
     typeof o.createdAt === 'number' &&
     typeof o.updatedAt === 'number' &&
     o.document !== undefined

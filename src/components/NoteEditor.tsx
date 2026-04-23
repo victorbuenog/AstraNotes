@@ -238,10 +238,6 @@ export function NoteEditor({ note }: Props) {
         </div>
         {saveLabel ? <span className="save-pill editor__save-pill">{saveLabel}</span> : null}
       </div>
-      <p className="editor__tags-hint-line">
-        Normalized lowercase; use commas between tags.
-      </p>
-
       <div
         ref={splitWrapRef}
         className={
@@ -253,7 +249,7 @@ export function NoteEditor({ note }: Props) {
         }
         style={splitGridStyle}
       >
-        {(mode === 'edit' || mode === 'split') && (
+        {(mode === 'edit' || mode === 'split' || mode === 'preview') && (
           <>
             <textarea
               className="editor__textarea"

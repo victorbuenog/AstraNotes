@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useNotes } from '../context/NotesContext'
 import { parseVaultImportJson } from '../vault/exportFormat'
+import {
+  noteFontFamilyToCssValue,
+  readEditorAppearance,
+  type NoteFontFamily,
+  writeEditorAppearance,
+} from '../preferences/editorAppearance'
 
 type Props = {
   onLogout: () => void
@@ -9,10 +15,25 @@ type Props = {
 
 export function SettingsMenu({ onLogout }: Props) {
   const { theme, toggle } = useTheme()
-  const { exportVaultJson, importVaultFromText } = useNotes()
+  const {
+    exportVaultJson,
+    importVaultFromText,
+    hasPrivatePin,
+    setPrivatePin,
+    resetPrivatePinAndWipe,
+  } = useNotes()
   const [open, setOpen] = useState(false)
+  const [noteFontFamily, setNoteFontFamily] = useState<NoteFontFamily>(() => readEditorAppearance().noteFontFamily)
+  const [noteFontSizePx, setNoteFontSizePx] = useState(() => readEditorAppearance().noteFontSizePx)
   const rootRef = useRef<HTMLDivElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const next = { noteFontFamily, noteFontSizePx }
+    writeEditorAppearance(next)
+    document.documentElement.style.setProperty('--note-font-family', noteFontFamilyToCssValue(noteFontFamily))
+    document.documentElement.style.setProperty('--note-font-size', `${noteFontSizePx}px`)
+  }, [noteFontFamily, noteFontSizePx])
 
   useEffect(() => {
     if (!open) return
@@ -69,6 +90,32 @@ export function SettingsMenu({ onLogout }: Props) {
     await importVaultFromText(text)
   }
 
+  const onSetPrivatePin = async () => {
+    const pin = window.prompt('Set private vault PIN (4-12 digits):')
+    if (pin === null) return
+    const ok = await setPrivatePin(pin)
+    if (!ok) window.alert('PIN must be 4-12 digits.')
+    else window.alert('Private vault PIN set.')
+  }
+
+  const onResetPrivatePin = async () => {
+    if (
+      !window.confirm(
+        'Resetting the private vault PIN permanently deletes all existing private notes. Continue?',
+      )
+    ) {
+      return
+    }
+    const pin = window.prompt('Enter new private vault PIN (4-12 digits):')
+    if (pin === null) return
+    const ok = await resetPrivatePinAndWipe(pin)
+    if (!ok) {
+      window.alert('Reset failed. PIN must be 4-12 digits, and private notes must be removable.')
+      return
+    }
+    window.alert('Private vault PIN reset. Existing private notes were deleted.')
+  }
+
   return (
     <div className="settings-menu" ref={rootRef}>
       <input
@@ -114,6 +161,46 @@ export function SettingsMenu({ onLogout }: Props) {
               Import vault…
             </button>
           </li>
+          <li className="settings-menu__sep" role="separator" />
+          <li role="none" className="settings-menu__section">
+            <label className="settings-menu__field">
+              Note font
+              <select
+                className="settings-menu__select"
+                value={noteFontFamily}
+                onChange={(e) => setNoteFontFamily(e.target.value as NoteFontFamily)}
+              >
+                <option value="mono">Monospace</option>
+                <option value="sans">Sans-serif</option>
+                <option value="serif">Serif</option>
+              </select>
+            </label>
+            <label className="settings-menu__field">
+              Note size ({noteFontSizePx}px)
+              <input
+                className="settings-menu__range"
+                type="range"
+                min={12}
+                max={22}
+                step={1}
+                value={noteFontSizePx}
+                onChange={(e) => setNoteFontSizePx(Number(e.target.value))}
+              />
+            </label>
+          </li>
+          <li className="settings-menu__sep" role="separator" />
+          <li role="none">
+            <button type="button" role="menuitem" className="settings-menu__item" onClick={() => void onSetPrivatePin()}>
+              {hasPrivatePin ? 'Change private PIN…' : 'Set private PIN…'}
+            </button>
+          </li>
+          {hasPrivatePin && (
+            <li role="none">
+              <button type="button" role="menuitem" className="settings-menu__item" onClick={() => void onResetPrivatePin()}>
+                Reset private PIN (wipe private notes)…
+              </button>
+            </li>
+          )}
           <li className="settings-menu__sep" role="separator" />
           <li role="none">
             <button
