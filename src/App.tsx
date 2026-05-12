@@ -10,9 +10,8 @@ import { ErrorBanner } from './components/ErrorBanner'
 import { Vault } from './crypto/vault'
 
 function MainChrome({ onLogout }: { onLogout: () => void }) {
-  const { notes, selectedId } = useNotes()
+  const { selectedNote } = useNotes()
   const { user } = useAuth()
-  const selected = selectedId ? notes.find((n) => n.id === selectedId) : null
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [overlayMode, setOverlayMode] = useState(false)
@@ -66,8 +65,8 @@ function MainChrome({ onLogout }: { onLogout: () => void }) {
                 ☰
               </button>
             )}
-            {selected ? (
-              <NoteEditor key={selected.id} note={selected} />
+            {selectedNote ? (
+              <NoteEditor key={selectedNote.id} note={selectedNote} />
             ) : (
               <div className="empty-main">
                 <p>Select a note or create a new one.</p>

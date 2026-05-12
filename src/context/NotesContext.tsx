@@ -8,7 +8,12 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import * as api from '../api/client'
+import {
+  deleteNote as deleteNoteRequest,
+  listNotes,
+  saveNote as saveNoteRequest,
+  upgradeLegacyNote,
+} from '../api/notesRepository'
 import type { Vault } from '../crypto/vault'
 import type { Note } from '../types/note'
 import { migrateNoteShape, newNote, setPrimaryMarkdown } from '../types/note'
@@ -29,12 +34,17 @@ import {
   setPrivatePin as storePrivatePin,
   verifyPrivatePin,
 } from '../preferences/privatePin'
+import { removeNoteById, sortNotesByUpdatedAt, upsertSortedNote } from '../notes/noteCollection'
+import { getAllNoteTags, getSelectedVisibleNoteId, getVisibleNotes } from '../notes/notesViewState'
 
 export type AppErrorState = { message: string; code: string } | null
 
 type NotesContextValue = {
   notes: Note[]
+  visibleNotes: Note[]
+  allTags: string[]
   selectedId: string | null
+  selectedNote: Note | null
   selectNote: (id: string | null) => void
   createNote: () => Promise<void>
   updateNote: (
@@ -99,22 +109,17 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const reload = useCallback(async () => {
     if (!vault.isUnlocked()) return
     try {
-      const { notes: initialNotes, legacyIds } = await api.listNotes(vault)
+      const { notes: initialNotes, legacyIds } = await listNotes(vault)
       let loaded = initialNotes
       if (legacyIds.length > 0) {
         for (const id of legacyIds) {
           const n = loaded.find((x) => x.id === id)
-          if (n) await api.upgradeLegacyNote(vault, n)
+          if (n) await upgradeLegacyNote(vault, n)
         }
-        const again = await api.listNotes(vault)
+        const again = await listNotes(vault)
         loaded = again.notes
       }
-      const sorted = loaded.sort((a, b) => b.updatedAt - a.updatedAt)
-      setNotes(sorted)
-      setSelectedId((cur) => {
-        if (cur && sorted.some((n) => n.id === cur)) return cur
-        return sorted[0]?.id ?? null
-      })
+      setNotes(sortNotesByUpdatedAt(loaded))
     } catch (e) {
       const msg = e instanceof AppError ? e.message : String(e)
       const code = e instanceof AppError ? e.code : ErrorCodes.NOTE_LIST_FAILED
@@ -131,7 +136,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       if (!vault.isUnlocked()) return
       setSaving(true)
       try {
-        await api.saveNote(vault, note)
+        await saveNoteRequest(vault, note)
         setLastSavedAt(Date.now())
       } catch (e) {
         const msg = e instanceof AppError ? e.message : String(e)
@@ -153,13 +158,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const queueSave = useCallback(
     (note: Note) => {
       pendingRef.current.set(note.id, note)
-      setNotes((prev) => {
-        const i = prev.findIndex((n) => n.id === note.id)
-        if (i < 0) return [...prev, note].sort((a, b) => b.updatedAt - a.updatedAt)
-        const next = [...prev]
-        next[i] = note
-        return next.sort((a, b) => b.updatedAt - a.updatedAt)
-      })
+      setNotes((prev) => upsertSortedNote(prev, note))
       debouncedPersist(note)
     },
     [debouncedPersist],
@@ -182,6 +181,43 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     return () => document.removeEventListener('visibilitychange', onHidden)
   }, [flushSave])
 
+  const visibleNotes = useMemo(
+    () =>
+      getVisibleNotes(notes, {
+        selectedId,
+        searchQuery,
+        tagFilter,
+        showArchived,
+        privateVaultOpen,
+      }),
+    [notes, privateVaultOpen, searchQuery, selectedId, showArchived, tagFilter],
+  )
+
+  const resolvedSelectedId = useMemo(
+    () =>
+      getSelectedVisibleNoteId(notes, {
+        selectedId,
+        searchQuery,
+        tagFilter,
+        showArchived,
+        privateVaultOpen,
+      }),
+    [notes, privateVaultOpen, searchQuery, selectedId, showArchived, tagFilter],
+  )
+
+  const selectedNote = useMemo(
+    () => visibleNotes.find((note) => note.id === resolvedSelectedId) ?? null,
+    [resolvedSelectedId, visibleNotes],
+  )
+
+  const allTags = useMemo(() => getAllNoteTags(notes), [notes])
+
+  useEffect(() => {
+    if (selectedId !== resolvedSelectedId) {
+      setSelectedId(resolvedSelectedId)
+    }
+  }, [resolvedSelectedId, selectedId])
+
   const selectNote = useCallback(
     async (id: string | null) => {
       await flushSave()
@@ -199,8 +235,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     setPrivateVaultOpen(false)
     const note = newNote()
     try {
-      await api.saveNote(vault, note)
-      setNotes((prev) => [note, ...prev].sort((a, b) => b.updatedAt - a.updatedAt))
+      await saveNoteRequest(vault, note)
+      setNotes((prev) => upsertSortedNote(prev, note))
       setSelectedId(note.id)
       setLastSavedAt(Date.now())
     } catch (e) {
@@ -242,10 +278,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       if (!current) return
       const next = { ...current, archived: true, updatedAt: Date.now() }
       await persistNote(next)
-      setNotes((prev) =>
-        prev.map((n) => (n.id === id ? next : n)).sort((a, b) => b.updatedAt - a.updatedAt),
-      )
-      setSelectedId((sel) => (sel === id ? null : sel))
+      setNotes((prev) => upsertSortedNote(prev, next))
     },
     [flushSave, persistNote],
   )
@@ -257,9 +290,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       if (!current) return
       const next = { ...current, archived: false, updatedAt: Date.now() }
       await persistNote(next)
-      setNotes((prev) =>
-        prev.map((n) => (n.id === id ? next : n)).sort((a, b) => b.updatedAt - a.updatedAt),
-      )
+      setNotes((prev) => upsertSortedNote(prev, next))
     },
     [flushSave, persistNote],
   )
@@ -271,12 +302,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       if (!current) return
       const next = { ...current, private: isPrivate, updatedAt: Date.now() }
       await persistNote(next)
-      setNotes((prev) =>
-        prev.map((n) => (n.id === id ? next : n)).sort((a, b) => b.updatedAt - a.updatedAt),
-      )
-      if (isPrivate) {
-        setSelectedId((sel) => (sel === id ? null : sel))
-      } else if (privateVaultOpen) {
+      setNotes((prev) => upsertSortedNote(prev, next))
+      if (!isPrivate && privateVaultOpen) {
         setPrivateVaultOpen(false)
       }
     },
@@ -287,15 +314,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     async (id: string) => {
       await flushSave()
       try {
-        await api.deleteNote(id)
-        setNotes((prev) => {
-          const filtered = prev.filter((n) => n.id !== id)
-          setSelectedId((sel) => {
-            if (sel !== id) return sel
-            return [...filtered].sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id ?? null
-          })
-          return filtered
-        })
+        await deleteNoteRequest(id)
+        setNotes((prev) => removeNoteById(prev, id))
       } catch (e) {
         const msg = e instanceof AppError ? e.message : String(e)
         const code = e instanceof AppError ? e.code : ErrorCodes.NOTE_DELETE_FAILED
@@ -333,7 +353,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       const ids = notesRef.current.filter((n) => n.private).map((n) => n.id)
       try {
         for (const id of ids) {
-          await api.deleteNote(id)
+          await deleteNoteRequest(id)
         }
       } catch (e) {
         const msg = e instanceof AppError ? e.message : String(e)
@@ -359,19 +379,6 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   useEffect(() => {
     setHasPrivatePinState(hasStoredPrivatePin(username))
   }, [username, privatePinVersion])
-
-  useEffect(() => {
-    if (!selectedId) return
-    const selected = notes.find((n) => n.id === selectedId)
-    if (!selected) return
-    if (privateVaultOpen && !selected.private) {
-      setSelectedId(notes.filter((n) => n.private).sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id ?? null)
-      return
-    }
-    if (!privateVaultOpen && selected.private) {
-      setSelectedId(notes.filter((n) => !n.private).sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id ?? null)
-    }
-  }, [privateVaultOpen, notes, selectedId])
 
   const clearError = useCallback(() => setError(null), [])
 
@@ -409,7 +416,7 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       setSaving(true)
       try {
         for (const note of result.data.notes) {
-          await api.saveNote(vault, migrateNoteShape(note))
+          await saveNoteRequest(vault, migrateNoteShape(note))
         }
         setLastSavedAt(Date.now())
         await reload()
@@ -431,7 +438,10 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const value = useMemo(
     (): NotesContextValue => ({
       notes,
-      selectedId,
+      visibleNotes,
+      allTags,
+      selectedId: resolvedSelectedId,
+      selectedNote,
       selectNote,
       createNote,
       updateNote,
@@ -462,7 +472,10 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
     }),
     [
       notes,
-      selectedId,
+      visibleNotes,
+      allTags,
+      resolvedSelectedId,
+      selectedNote,
       selectNote,
       createNote,
       updateNote,

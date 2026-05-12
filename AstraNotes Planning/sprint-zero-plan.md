@@ -1,6 +1,20 @@
+---
+aliases:
+  - Sprint Zero Plan
+tags:
+  - astranotes
+  - planning
+  - sprint
+---
+
 # Sprint Zero plan
 
-**Goal:** Align the codebase with the **early baseline** (`planning/requirements.md`), close obvious gaps against **US-1, US-2, US-5**, and leave **search, organization, export, and plugin docs** ready for Sprint 1 with minimal unknowns.
+> [!info] Related notes
+> Home: [[README]]
+> Planning inputs: [[requirements]] · [[user-stories]] · [[backlog]]
+> Supporting notes: [[LOG]] · [[Definition of Done]] · [[Working Agreement]]
+
+**Goal:** Align the codebase with the **early baseline** ([[requirements]]), close obvious gaps against **US-1, US-2, US-5**, and leave **search, organization, export, and plugin docs** ready for Sprint 1 with minimal unknowns.
 
 **Duration:** Short (suggest **3–5 focused working days** or **1 calendar week**; adjust to course cadence).
 
@@ -46,7 +60,7 @@
 
 ### 5. Backlog grooming (half day)
 
-- [ ] Reorder `planning/backlog.md` if audit changes priorities.
+- [ ] Reorder [[backlog]] if audit changes priorities.
 - [ ] Split **US-3 / US-4 / US-6** into implementation tasks with estimates.
 - [ ] Schedule **US-7** doc task early if refactors are needed before Sprint 1 feature work.
 
@@ -57,9 +71,9 @@
 | Deliverable | Location / form |
 | --- | --- |
 | Audit results | `LOG.md` section or checklist under planning |
-| Search/tags/export decisions | Short notes in `LOG.md` or `planning/` ADR |
+| Search/tags/export decisions | Short notes in [[LOG]] or a vault ADR note |
 | Updated tests | Repository |
-| Sprint 1 candidate backlog | `planning/backlog.md` + refined tasks |
+| Sprint 1 candidate backlog | [[backlog]] + refined tasks |
 
 ---
 

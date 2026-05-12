@@ -1,0 +1,189 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{array}
+\geometry{margin=1in}
+
+\title{AstraNotes — Development Documentation}
+\author{CSEN 296B — Spring 2026}
+\date{April 2026}
+
+\definecolor{codebg}{rgb}{0.95,0.95,0.95}
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\begin{document}
+\maketitle
+
+\section{Development Direction}
+\subsection{Programming Language}
+The project uses \textbf{TypeScript} across both client and server codebases:
+\begin{itemize}
+  \item \textbf{Client}: TypeScript with React 19, Vite 6, and Web Crypto API for client-side encryption
+  \item \textbf{Server}: TypeScript with Express, better-sqlite3, and express-session
+\end{itemize}
+
+\subsection{Web App vs Desktop App Decision}
+AstraNotes is implemented as a \textbf{web-based single-page application (SPA)} rather than a desktop application. Key rationale:
+\begin{itemize}
+  \item Satisfies \textbf{NFR2}: Runs on ≥3 platforms (Windows, macOS, Linux) via standards-compliant browsers
+  \item Aligns with \textbf{FR6-S}: Web Crypto API (required for client-side encryption) is only available in secure browser contexts
+  \item Simplified deployment: Centralized server with browser-based access, optional Docker containerization
+  \item Cross-platform consistency: Single codebase serves all platforms without platform-specific packaging
+\end{itemize}
+
+\section{Project Structure \& Build Environment}
+\subsection{Directory Structure (Simplified)}
+\begin{lstlisting}[language=bash]
+.
+├── src/                  # Client-side React application
+│   ├── main.tsx         # Entry point
+│   ├── App.tsx          # Root component (theme, auth, notes shell)
+│   ├── api/             # Fetch client with credentials
+│   ├── components/       # UI components (Sidebar, NoteEditor, AuthScreen)
+│   ├── crypto/          # Vault (PBKDF2 + AES-GCM)
+│   ├── context/          # React contexts (Auth, Notes, Theme)
+│   └── types/           # Shared TypeScript types
+├── server/              # Express API
+│   ├── index.ts         # Entry (listen, DB init)
+│   ├── app.ts           # Routes, session config
+│   └── db.ts            # SQLite schema + journal mode
+├── planning/            # Requirements, design docs, logs
+├── docs/                # Plugin documentation
+└── package.json         # Scripts + dependencies
+\end{lstlisting}
+
+\subsection{Build \& Run Environment}
+\textbf{Core Tools}: Node.js 22.x, npm, TypeScript 5.7, Vite 6, Vitest 2.1
+
+\textbf{Key Commands (from \texttt{package.json})}:
+\begin{itemize}
+  \item \texttt{npm run dev}: Concurrently starts API (tsx watch, port 3001) + Vite dev server (port 5173)
+  \item \texttt{npm run build}: Typecheck (both tsconfigs) + Vite production build
+  \item \texttt{npm run test}: Vitest run (jsdom for client, node for server tests)
+  \item \texttt{npm run typecheck}: \texttt{tsc --noEmit} for app + server configs
+  \item \texttt{npm run lint}: ESLint (excludes \texttt{server/})
+\end{itemize}
+
+\textbf{Environment}: SQLite (default \texttt{data/astranotes.db}), configurable via \texttt{ASTRANOTES\_DB\_PATH}. Session secret required in production (\texttt{SESSION\_SECRET}). Optional Docker support via \texttt{docker-compose.yml}.
+
+\section{UI Shell Description}
+The UI follows a layered component hierarchy managed by React contexts:
+
+\textbf{Component Tree}:
+\begin{lstlisting}[language=jsx]
+main.tsx → App.tsx
+  → ThemeProvider (light/dark mode)
+    → AuthProvider (session user, logout)
+      → AuthScreen (register/login tabs) OR
+      → UnlockScreen (vault password after session restore) OR
+      → NotesProvider (vault, notes CRUD)
+        → MainChrome
+          → Sidebar (collapsible):
+              - Note list (sorted by updatedAt)
+              - Search (title + body)
+              - Tag filter
+              - SettingsMenu (theme, export/import, logout)
+          → NoteEditor:
+              - Title + tags input
+              - Write / Split / Read modes
+              - Autosave status (Saving... / Saved)
+          → ErrorBanner (persistent error codes)
+\end{lstlisting}
+
+\textbf{Key UI Behaviors}:
+\begin{itemize}
+  \item \texttt{AuthScreen}: Inline vault unlock after login (no duplicate password step)
+  \item \texttt{UnlockScreen}: Only triggers on page reload with active session
+  \item \texttt{Sidebar}: Three-dot menu per note for archive/restore, delete, export
+  \item \texttt{NoteEditor}: Debounced autosave (450ms), resizable split pane, Markdown preview with \texttt{react-markdown}
+\end{itemize}
+
+\section{First Functionality Slices}
+\subsection{Slice 1: Multi-User Note CRUD with Autosave (April 7, 2026)}
+\textbf{Requirement IDs}: FR1, US-1, NFR1
+
+\textbf{Implementation Scope}:
+\begin{itemize}
+  \item Express API with SQLite persistence: \texttt{server/db.ts} (users + notes tables), \texttt{server/app.ts} (auth + note routes)
+  \item User authentication: \texttt{POST /api/register}, \texttt{POST /api/login}, HTTP-only session cookie (\texttt{astranotes.sid})
+  \item Note lifecycle: Create, read, update, archive (soft hide), permanent delete (DB removal)
+  \item Debounced autosave: \texttt{NotesContext.tsx} (450ms delay, Saving/Saved UI states)
+  \item Client-side state: \texttt{NotesContext}, \texttt{AuthContext} with \texttt{credentials: 'include'} for API calls
+\end{itemize}
+
+\textbf{Acceptance Criteria Met}:
+\begin{itemize}
+  \item[√] Creating/editing notes persists via API; UI shows saving/saved feedback
+  \item[√] Archive hides notes from main list; unarchive restores; delete permanently removes rows
+  \item[√] Session-bound access: Cross-user note operations return 403
+  \item[√] Reload after save shows same content after unlock/session
+\end{itemize}
+
+\textbf{Key Files}:
+\texttt{server/index.ts}, \texttt{server/app.ts}, \texttt{server/db.ts}, \texttt{src/context/NotesContext.tsx}, \texttt{src/components/Sidebar.tsx}, \texttt{src/components/NoteEditor.tsx}
+
+\subsection{Slice 2: Client-Side Encryption with Session Isolation (April 7, 2026)}
+\textbf{Requirement IDs}: FR6-S, US-5, Sec 1
+
+\textbf{Implementation Scope}:
+\begin{itemize}
+  \item Web Crypto Vault: \texttt{src/crypto/vault.ts} (PBKDF2 key derivation, AES-GCM encrypt/decrypt)
+  \item Encrypted payloads: Notes stored as \texttt{\{v:2, ivB64, ciphertextB64\}} in \texttt{notes.payload} (SQLite)
+  \item Vault metadata: \texttt{users.encryption\_meta} (salt, verifier) for password-based key derivation
+  \item Server isolation: API enforces \texttt{user\_id} match on all note operations; cross-user access returns 403
+  \item Legacy migration: Pre-encryption plaintext rows auto-reuploaded as ciphertext on first unlock
+\end{itemize}
+
+\textbf{Acceptance Criteria Met}:
+\begin{itemize}
+  \item[√] Note bodies stored as opaque ciphertext on server; API responses never expose plaintext
+  \item[√] Cross-user PUT attempts return 403 (verified in \texttt{server/app.test.ts})
+  \item[√] Vault unlock after login (inline) or session restore (UnlockScreen)
+  \item[√] README documents threat model: what is/is not protected
+\end{itemize}
+
+\textbf{Key Files}:
+\texttt{src/crypto/vault.ts}, \texttt{server/app.ts}, \texttt{server/db.ts}, \texttt{src/context/AuthContext.tsx}, \texttt{src/App.tsx}
+
+\section{Traceability Note}
+This section maps the implemented slices to requirement IDs and Lucid UML elements from the project's design package (\texttt{planning/astranotes-design-document.md}).
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{|p{3cm}|p{4cm}|p{6cm}|}
+\hline
+\textbf{Slice} & \textbf{Requirement IDs} & \textbf{UML Elements (Lucid Package)} \\
+\hline
+Multi-User Note CRUD (Slice 1) & FR1, US-1, NFR1 & 
+  - Class: \texttt{Note}, \texttt{NoteDocument}, \texttt{MarkdownBlock} \\
+  & & - Activity: Autosave encrypted note (edit → encrypt → PUT → 204/error) \\
+  & & - Use Case: Create/edit markdown note, Browse/search/filter tags \\
+  & & - Deployment: Browser SPA → Express API → SQLite \\
+\hline
+Client-Side Encryption (Slice 2) & FR6-S, US-5, Sec 1 & 
+  - Class: \texttt{Vault} (encrypt/decrypt), \texttt{EncryptedNoteRow} (payload) \\
+  & & - Use Case: Unlock encrypted vault, Register or log in \\
+  & & - Object: Snapshot with \texttt{v} (vault), \texttt{row1} (ciphertext) \\
+  & & - Deployment: Browser (Web Crypto) ↔ Node (Express) ↔ SQLite (ciphertext) \\
+\hline
+\end{tabular}
+\caption{Traceability: Slices → Requirements → UML Elements}
+\end{table}
+
+\textbf{Traceability Metrics} (from \texttt{planning/uml\_traceability\_validation.md}):
+\begin{itemize}
+  \item FR1 (Slice 1): Partially Traced — archive/delete branches not in UML
+  \item FR6-S (Slice 2): Fully Traced — structural, behavioral, deployment evidence complete
+\end{itemize}
+
+\end{document}

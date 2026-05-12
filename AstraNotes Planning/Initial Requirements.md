@@ -1,6 +1,23 @@
+---
+aliases:
+  - Initial Requirements
+  - Initial Requirement Set
+tags:
+  - astranotes
+  - planning
+  - requirements
+  - source
+---
+
 # Initial Requirement Set
 
-**Living implementation and traceability:** [GitHub: victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes) · [`refined_requirements.md`](./refined_requirements.md) · [`requirements.md`](./requirements.md).
+> [!info] Related notes
+> Home: [[README]]
+> Requirement evolution: [[Initial Requirements]] -> [[requirements]] -> [[refined_requirements]]
+> Acceptance and ordering: [[user-stories]] · [[backlog]]
+> Traceability and design: [[prd]] · [[uml_traceability_validation]] · [[astranotes-design-document]]
+
+**Living implementation and traceability:** [GitHub: victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes) · [[refined_requirements]] · [[requirements]].
 
 ## Functional requirements
 

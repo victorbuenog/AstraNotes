@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import * as api from '../api/client'
+import { resumeSessionAndUnlock } from '../auth/vaultSession'
 import type { Vault } from '../crypto/vault'
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
@@ -30,18 +30,7 @@ export function UnlockScreen({
     }
     setBusy(true)
     try {
-      const me = await api.getMe()
-      if (!me) {
-        setError({ msg: 'Session expired. Log in again.', code: ErrorCodes.AUTH_UNAUTHORIZED })
-        return
-      }
-      if (!me.encryptionMeta) {
-        const meta = await vault.create(password)
-        await api.patchEncryptionMeta(meta)
-      } else {
-        vault.lock()
-        await vault.unlock(password, me.encryptionMeta)
-      }
+      await resumeSessionAndUnlock(vault, password)
       onUnlocked()
     } catch (e) {
       const msg = e instanceof AppError ? e.message : String(e)

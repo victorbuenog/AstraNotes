@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import * as api from '../api/client'
+import {
+  loginAndBootstrap,
+  registerAndBootstrap,
+} from '../auth/vaultSession'
 import type { Vault } from '../crypto/vault'
 import { AppError } from '../errors/AppError'
 import { ErrorCodes } from '../errors/codes'
@@ -41,20 +44,11 @@ export function AuthScreen({
     setBusy(true)
     try {
       if (mode === 'register') {
-        vault.lock()
-        const encryptionMeta = await vault.create(password)
-        const result = await api.register(u, password, encryptionMeta)
-        onAuthed({ username: result.username }, { skipVaultUnlock: true })
+        const user = await registerAndBootstrap(vault, u, password)
+        onAuthed(user, { skipVaultUnlock: true })
       } else {
-        const result = await api.login(u, password)
-        vault.lock()
-        if (!result.encryptionMeta) {
-          const meta = await vault.create(password)
-          await api.patchEncryptionMeta(meta)
-        } else {
-          await vault.unlock(password, result.encryptionMeta)
-        }
-        onAuthed({ username: result.username }, { skipVaultUnlock: true })
+        const user = await loginAndBootstrap(vault, u, password)
+        onAuthed(user, { skipVaultUnlock: true })
       }
     } catch (e) {
       const msg = e instanceof AppError ? e.message : String(e)

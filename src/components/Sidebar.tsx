@@ -1,10 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNotes } from '../context/NotesContext'
-import {
-  MAX_SEARCH_QUERY_LENGTH,
-  collectAllTags,
-  noteMatchesSearch,
-} from '../search/noteSearch'
+import { MAX_SEARCH_QUERY_LENGTH } from '../search/noteSearch'
 import {
   setSkipDeleteConfirm,
   shouldSkipDeleteConfirm,
@@ -47,7 +43,8 @@ export function Sidebar({
   onAfterSelectNote,
 }: SidebarProps) {
   const {
-    notes,
+    visibleNotes,
+    allTags,
     selectedId,
     selectNote,
     createNote,
@@ -68,25 +65,10 @@ export function Sidebar({
     deleteNoteForever,
   } = useNotes()
 
-  const allTags = useMemo(() => collectAllTags(notes), [notes])
-
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null)
   const [neverAskAgain, setNeverAskAgain] = useState(false)
   const [vaultPinDialog, setVaultPinDialog] = useState<VaultPinDialogState | null>(null)
-
-  const pool = useMemo(() => {
-    return notes
-      .filter((n) => (showArchived ? n.archived : !n.archived))
-      .filter((n) => n.private === privateVaultOpen)
-      .filter((n) => (tagFilter ? n.tags.includes(tagFilter) : true))
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [notes, showArchived, privateVaultOpen, tagFilter])
-
-  const visible = useMemo(
-    () => pool.filter((n) => noteMatchesSearch(n, searchQuery)),
-    [pool, searchQuery],
-  )
 
   useEffect(() => {
     if (!menuOpenId) return
@@ -226,19 +208,19 @@ export function Sidebar({
           <p className="sidebar__empty">Set a private vault PIN in Settings to enable locked notes.</p>
         )}
         <nav className="sidebar__list" aria-label="Notes">
-          {visible.length === 0 ? (
+          {visibleNotes.length === 0 ? (
             <p className="sidebar__empty">
-              {pool.length === 0
-                ? privateVaultOpen
+              {searchQuery.trim() || tagFilter
+                ? 'No notes match search or tag filter.'
+                : privateVaultOpen
                   ? 'No private notes.'
                   : showArchived
-                  ? 'No archived notes.'
-                  : 'No notes yet.'
-                : 'No notes match search or tag filter.'}
+                    ? 'No archived notes.'
+                    : 'No notes yet.'}
             </p>
           ) : (
             <ul>
-              {visible.map((n) => (
+              {visibleNotes.map((n) => (
                 <li
                   key={n.id}
                   className={

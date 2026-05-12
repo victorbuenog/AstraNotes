@@ -1,8 +1,25 @@
+---
+aliases:
+  - Planning Baseline
+tags:
+  - astranotes
+  - planning
+  - requirements
+  - baseline
+---
+
 # AstraNotes — planning baseline (early)
+
+> [!info] Related notes
+> Home: [[README]]
+> Source requirements: [[Initial Requirements]]
+> Refinement layer: [[refined_requirements]]
+> Delivery planning: [[user-stories]] · [[backlog]] · [[sprint-zero-plan]]
+> Supporting references: [[glossary]] · [[prd]]
 
 This document distills the **Initial Requirements** into a **practical near-term baseline** for the current stack (React + Vite client, Express + SQLite API, session-scoped users, client-side encryption). It is not a full specification; it sets **what “good enough for the next phase” means**.
 
-**Implementation:** the live app tracks this baseline and [`refined_requirements.md`](./refined_requirements.md); source of truth for commands and layout is the repository **[README](../README.md)** at `https://github.com/victorbuenog/AstraNotes`.
+**Implementation:** the live app tracks this baseline and [[refined_requirements]]; source of truth for commands and layout is the repository **[README](../README.md)** at `https://github.com/victorbuenog/AstraNotes`.
 
 ## Product intent
 
@@ -47,6 +64,6 @@ These items are **in scope for planning** until the first major milestone after 
 
 Detailed acceptance criteria and backlog ordering live in:
 
-- `planning/user-stories.md`
-- `planning/backlog.md`
-- `planning/sprint-zero-plan.md`
+- [[user-stories]]
+- [[backlog]]
+- [[sprint-zero-plan]]

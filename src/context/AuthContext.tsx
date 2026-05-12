@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import * as api from '../api/client'
+import { getMe, logout as logoutRequest } from '../api/authApi'
 
 export type AuthUser = { username: string }
 
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const me = await api.getMe()
+      const me = await getMe()
       setUser(me)
     } catch {
       setUser(null)
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await api.logout()
+      await logoutRequest()
     } finally {
       setUser(null)
     }

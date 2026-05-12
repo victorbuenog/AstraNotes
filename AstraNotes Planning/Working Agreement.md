@@ -1,4 +1,20 @@
+---
+aliases:
+  - Team Working Agreement
+tags:
+  - astranotes
+  - planning
+  - process
+  - working-agreement
+---
+
 # Working Agreement
+
+> [!info] Related notes
+> Home: [[README]]
+> Process pair: [[Definition of Done]]
+> Planning flow: [[backlog]] · [[user-stories]] · [[LOG]]
+> Architecture and requirements: [[requirements]] · [[refined_requirements]] · [[architecture-review]]
 
 **Repository:** [github.com/victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes).
 

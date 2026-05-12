@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AstraNotes — Software Development Lifecycle</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #818cf8;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --phase-1: #6366f1;
+      --phase-2: #8b5cf6;
+      --phase-3: #a78bfa;
+      --phase-4: #c4b5fd;
+      --phase-5: #ddd6fe;
+      --phase-6: #ede9fe;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    header {
+      text-align: center;
+      padding: 3rem 0;
+      background: linear-gradient(135deg, var(--phase-1), var(--phase-3));
+      color: white;
+      border-radius: 12px;
+      margin-bottom: 3rem;
+    }
+    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    header p { font-size: 1.1rem; opacity: 0.9; }
+    .meta {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+    .phase {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-left: 5px solid var(--phase-1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .phase:nth-child(2) { border-left-color: var(--phase-2); }
+    .phase:nth-child(3) { border-left-color: var(--phase-3); }
+    .phase:nth-child(4) { border-left-color: var(--phase-4); }
+    .phase:nth-child(5) { border-left-color: var(--phase-5); }
+    .phase:nth-child(6) { border-left-color: var(--phase-6); }
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .phase-number {
+      background: var(--phase-1);
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .phase:nth-child(2) .phase-number { background: var(--phase-2); }
+    .phase:nth-child(3) .phase-number { background: var(--phase-3); }
+    .phase:nth-child(4) .phase-number { background: var(--phase-4); }
+    .phase:nth-child(5) .phase-number { background: var(--phase-5); }
+    .phase:nth-child(6) .phase-number { background: var(--phase-6); color: var(--text); }
+    .phase-title h2 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .phase-title .dates { color: var(--text-secondary); font-size: 0.9rem; }
+    .section {
+      margin: 1.5rem 0;
+      padding: 1.25rem;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+    .section h3 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section h3::before {
+      content: '';
+      width: 4px;
+      height: 1rem;
+      background: var(--primary-light);
+      border-radius: 2px;
+      display: inline-block;
+    }
+    ul { padding-left: 1.5rem; }
+    li { margin-bottom: 0.5rem; }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .tag-fr { background: #dbeafe; color: #1e40af; }
+    .tag-nfr { background: #d1fae5; color: #065f46; }
+    .tag-sec { background: #fce7f3; color: #9d174d; }
+    .tag-us { background: #fef3c7; color: #92400e; }
+    .tag-p { background: #ede9fe; color: #5b21b0; }
+    .artifact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .artifact-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .artifact-card h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary);
+    }
+    .artifact-card p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .artifact-card .path {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+    .uml-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    .uml-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .uml-card .page-num {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .uml-card h4 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .uml-card .type {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .uml-card p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+    .traceability-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+    .traceability-table th,
+    .traceability-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .traceability-table th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-full { color: #10b981; font-weight: 600; }
+    .status-partial { color: #f59e0b; font-weight: 600; }
+    .status-weak { color: #f97316; font-weight: 600; }
+    .status-none { color: #ef4444; font-weight: 600; }
+    .log-entry {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-date {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .log-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .log-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .sprint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .sprint-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .sprint-card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+    .sprint-card .priority {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .priority-p0 { color: #dc2626; }
+    .priority-p1 { color: #f59e0b; }
+    .priority-p2 { color: #4f46e5; }
+    .priority-ice { color: #64748b; }
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .tech-item {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tech-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .metric-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AstraNotes</h1>
+      <p>Software Development Lifecycle (SDLC)</p>
+      <div class="meta">
+        <span>CSEN 296B — Spring 2026</span>
+        <span>|</span>
+        <span>Repository: github.com/victorbuenog/AstraNotes</span>
+        <span>|</span>
+        <span>Version: 1.0 (2026-04)</span>
+      </div>
+    </header>
+
+    <!-- Phase 1: Planning & Requirements -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-number">1</div>
+        <div class="phase-title">
+          <h2>Planning & Requirements Analysis</h2>
+          <div class="dates">April 2026 — Initial Planning</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Project Overview</h3>
+        <p>AstraNotes is a secure, multi-user note-taking web application with client-side encryption. Users register/login with username/password, and note bodies are encrypted in the browser (PBKDF2 + AES-GCM) before being stored on the server as opaque ciphertext.</p>
+        <div class="tech-stack">
+          <div class="tech-item"><div class="dot"></div>React 19 + Vite 6 (SPA)</div>
+          <div class="tech-item"><div class="dot"></div>Express + better-sqlite3 (API)</div>
+          <div class="tech-item"><div class="dot"></div>Web Crypto API (Encryption)</div>
+          <div class="tech-item"><div class="dot"></div>SQLite (Persistence)</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Requirements Identified</h3>
+        <div class="artifact-grid">
+          <div class="artifact-card">
+            <h4>Initial Requirements (FR1–FR8)</h4>
+            <p>Original functional and non-functional requirements including note CRUD, search, tags, plugins, voice notes, encryption, and export/import.</p>
+            <div class="path">planning/Initial Requirements.md</div>
+          </div>
+          <div class="artifact-card">
+            <h4>Refined Requirements</h4>
+            <p>Testable baseline with priority bands (P0–P2), FR2a/FR2b/FR2c splits, and FR6-S vs FR6-P distinction.</p>
+            <div class="path">planning/refined_requirements.md</div>
+          </div>
+          <div class="artifact-card">
+            <h4>User Stories (US-1 – US-7)</h4>
+            <p>Acceptance criteria for: reliable notes, preview toggle, search, tags, encryption, export/import, and plugin-ready boundary.</p>
+            <div class="path">planning/user-stories.md</div>
+          </div>
+          <div class="artifact-card">
+            <h4>Product Requirements Doc</h4>
+            <p>PRD outlining problem statement, users/stakeholders, core features, NFRs, risks, and out-of-scope items.</p>
+            <div class="path">planning/prd.md</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Requirements Traceability (Initial)</h3>
+        <table class="traceability-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Requirement</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-fr">FR1</span></td>
+              <td>Create, read, update notes with autosave; archive/unarchive; permanent delete</td>
+              <td>P0</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR2a</span></td>
+              <td>Search notes by text (title + body), empty query behavior</td>
+              <td>P1</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR2b</span></td>
+              <td>Tag-based organization and filtering</td>
+              <td>P1</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR3</span></td>
+              <td>Toggle/split Markdown preview without losing unsaved work</td>
+              <td>P0</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR6-S</span></td>
+              <td>Server stores ciphertext; client decrypts; cross-user access denied (403)</td>
+              <td>P0</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR7</span></td>
+              <td>Versioned export/import with validation and idempotency</td>
+              <td>P1</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR4</span></td>
+              <td>Stable extension model for note types/blocks</td>
+              <td>P2</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-nfr">NFR1</span></td>
+              <td>Human-scale latency; honest performance claims</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-nfr">NFR2</span></td>
+              <td>Run on ≥3 platforms (Windows, macOS, Linux)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-sec">Sec 1</span></td>
+              <td>Authenticated encryption; keys only in client memory</td>
+              <td>P0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>Backlog & Prioritization</h3>
+        <div class="sprint-grid">
+          <div class="sprint-card">
+            <h4>P0 — Must Have</h4>
+            <div class="priority priority-p0">Critical</div>
+            <ul>
+              <li><span class="tag tag-us">US-5</span> Encryption + isolation</li>
+              <li><span class="tag tag-us">US-1</span> Reliable notes + autosave</li>
+              <li><span class="tag tag-us">US-2</span> Markdown preview toggle</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>P1 — Next Milestone</h4>
+            <div class="priority priority-p1">Important</div>
+            <ul>
+              <li><span class="tag tag-us">US-3</span> Search (title + body)</li>
+              <li><span class="tag tag-us">US-4</span> Tags or folders</li>
+              <li><span class="tag tag-us">US-6</span> Export / import vault</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>P2 — Foundation</h4>
+            <div class="priority priority-p2">Future</div>
+            <ul>
+              <li><span class="tag tag-us">US-7</span> Plugin-ready boundary</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>Icebox — Deferred</h4>
+            <div class="priority priority-ice">Later</div>
+            <ul>
+              <li>FR5 — Voice notes</li>
+              <li>FR2c — 10k notes search</li>
+              <li>FR8 — Offline + sync</li>
+              <li>FR6-P — Per-note passphrase</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-secondary)">Source: planning/backlog.md</p>
+      </div>
+    </div>
+
+    <!-- Phase 2: Design & UML Modeling -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-number">2</div>
+        <div class="phase-title">
+          <h2>Design & UML Modeling</h2>
+          <div class="dates">April 2026 — Lucid UML Package</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Lucid UML Diagram Suite</h3>
+        <p style="margin-bottom:1rem;">The design package includes 7 pages covering rationale, structural, behavioral, and deployment views. Source: <code>scripts/astranotes-uml-lucid-import.json</code></p>
+        <div class="uml-grid">
+          <div class="uml-card">
+            <div class="page-num">0</div>
+            <div class="type">Narrative</div>
+            <h4>Rationale</h4>
+            <p>Explains how the package now closes the major traceability gaps for notes lifecycle, preview semantics, import/export validation, and cross-platform delivery.</p>
+          </div>
+          <div class="uml-card">
+            <div class="page-num">1</div>
+            <div class="type">Structural — Class Diagram</div>
+            <h4>Class Diagram</h4>
+            <p>Client: <code>Note</code>, <code>NoteDocument</code>, <code>NoteBlock</code>, <code>EditorSession</code>, <code>Vault</code>, <code>VaultExportFile</code>. Server: <code>UserAccount</code>, <code>EncryptedNoteRow</code>.</p>
+          </div>
+          <div class="uml-card">
+            <div class="page-num">2</div>
+            <div class="type">Structural — Object Diagram</div>
+            <h4>Object Diagram</h4>
+            <p>Snapshot: <code>u1</code>, <code>n1</code>, <code>doc1</code>, <code>b1</code>, <code>sess1</code>, <code>v</code>, <code>row1</code>, <code>exp1</code>; caption states plaintext stays in browser memory until explicit export.</p>
+          </div>
+          <div class="uml-card">
+            <div class="page-num">3</div>
+            <div class="type">Behavioral — Use Case</div>
+            <h4>Use Case Diagram</h4>
+            <p>Actor: student/operator. Use cases now make archive/restore, permanent delete, preview, import validation, and idempotent upsert behavior explicit.</p>
+          </div>
+          <div class="uml-card">
+            <div class="page-num">4</div>
+            <div class="type">Behavioral — Activity Diagram</div>
+            <h4>Activity: Edit / Preview / Autosave</h4>
+            <p>Edit → preview from current draft → debounce → vault unlocked? → serialize, encrypt, PUT with cookie → saved or ErrorBanner.</p>
+          </div>
+          <div class="uml-card">
+            <div class="page-num">5</div>
+            <div class="type">Behavioral — Activity Diagram</div>
+            <h4>Activity: Vault Import Validation</h4>
+            <p>Pick JSON → parse → validate <code>formatVersion</code> + note schema → confirm replacement policy → save/upsert notes → reload or error.</p>
+          </div>
+          <div class="uml-card">
+            <div class="page-num">6</div>
+            <div class="type">Physical — Deployment Diagram</div>
+            <h4>Deployment + Platform Delivery</h4>
+            <p>Windows, macOS, and Linux browsers ↔ one Node 22 + Express origin ↔ SQLite, with Docker / Dev Container noted as an optional common maintainer runtime.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>UML Traceability Validation</h3>
+        <p style="margin-bottom:1rem;">Validation of Lucid UML against refined requirements baseline. Source: <code>planning/uml_traceability_validation.md</code></p>
+        <table class="traceability-table">
+          <thead>
+            <tr>
+              <th>Req ID</th>
+              <th>Requirement</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-fr">FR1</span></td>
+              <td>Create/read/update notes, autosave, archive/delete</td>
+              <td class="status-full">Fully Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR2a</span></td>
+              <td>Search by text with empty-query behavior</td>
+              <td class="status-partial">Partially Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR2b</span></td>
+              <td>Tag organization and filtering</td>
+              <td class="status-full">Fully Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR3</span></td>
+              <td>Toggle/split Markdown preview</td>
+              <td class="status-full">Fully Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR6-S</span></td>
+              <td>Server ciphertext, client decrypt, cross-user denial</td>
+              <td class="status-full">Fully Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR7</span></td>
+              <td>Versioned export/import</td>
+              <td class="status-full">Fully Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-fr">FR4</span></td>
+              <td>Stable extension model for note types</td>
+              <td class="status-partial">Partially Traced</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-nfr">NFR2</span></td>
+              <td>Run on ≥3 platforms</td>
+              <td class="status-full">Fully Traced</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="metrics" style="margin-top:1.5rem;">
+          <div class="metric-card">
+            <div class="metric-value">8</div>
+            <div class="metric-label">Requirements Reviewed</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">6</div>
+            <div class="metric-label">Fully Traced</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">2</div>
+            <div class="metric-label">Partially Traced</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">0</div>
+            <div class="metric-label">Weakly Traced</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Design Document</h3>
+        <p>Comprehensive SDD (Software Design Document) mapping requirements to UML views and implementation. Source: <code>planning/astranotes-design-document.md</code></p>
+        <div class="artifact-grid">
+          <div class="artifact-card">
+            <h4>Architecture Decisions (ADR)</h4>
+            <p>ADR-1: Client-side encryption; ADR-2: Express session cookie; ADR-3: SQLite embedded; ADR-4: Single process prod Docker; ADR-5: TypeScript split configs; ADR-6: User-initiated export.</p>
+          </div>
+          <div class="artifact-card">
+            <h4>Security Model</h4>
+            <p>FR6-S design centerpiece: Vault.encrypt/decrypt, EncryptedNoteRow.payload, Web Crypto in browser, session auth, SQLite ciphertext rows.</p>
+          </div>
+          <div class="artifact-card">
+            <h4>Known Gaps</h4>
+            <p>Remaining gaps are concentrated in FR2a search semantics and FR4 extension/runtime contracts; FR1, FR3, FR7, and NFR2 are now explicit in the UML.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Governance & Ethics Memo</h3>
+        <p>Privacy, PII handling, data leakage vectors, licensing, and AI use guardrails. Source: <code>planning/governance_ethics_memo.md</code></p>
+        <div class="metrics">
+          <div class="metric-card">
+            <div class="metric-value">4</div>
+            <div class="metric-label">Core Principles</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">5</div>
+            <div class="metric-label">Data Leakage Vectors</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">6</div>
+            <div class="metric-label">AI Guardrails</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3: Sprint Planning -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-number">3</div>
+        <div class="phase-title">
+          <h2>Sprint Planning & Setup</h2>
+          <div class="dates">April 2026 — Sprint Zero</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Sprint Zero Plan</h3>
+        <p>Goal: Align codebase with early baseline, close gaps against US-1, US-2, US-5, and prepare search/tags/export for Sprint 1. Duration: 3–5 focused working days.</p>
+        <div class="artifact-card" style="margin-top:1rem;">
+          <h4>Objectives</h4>
+          <ul>
+            <li>Verify current behavior against acceptance criteria for encryption/isolation, autosave, and Markdown editing</li>
+            <li>Document gaps as concrete tasks linked to user stories</li>
+            <li>Stabilize developer workflow (Docker Compose, Dev Container)</li>
+            <li>Spike search and tags (time-boxed) to pick approach for Sprint 1</li>
+          </ul>
+          <div class="path">planning/sprint-zero-plan.md</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Working Agreement & Definition of Done</h3>
+        <div class="sprint-grid">
+          <div class="sprint-card">
+            <h4>Working Agreement</h4>
+            <ul>
+              <li>Feature list hygiene</li>
+              <li>AI use for planning/code/docs</li>
+              <li>Verification before new features</li>
+            </ul>
+            <div class="path">planning/Working Agreement.md</div>
+          </div>
+          <div class="sprint-card">
+            <h4>Definition of Done</h4>
+            <ul>
+              <li>Tests pass (Vitest, server tests)</li>
+              <li>Security requirements met</li>
+              <li>Logs/README/LOG updated</li>
+            </ul>
+            <div class="path">planning/Definition of Done.md</div>
+          </div>
+          <div class="sprint-card">
+            <h4>Definition of Ready</h4>
+            <ul>
+              <li>Maps to user story with AC</li>
+              <li>API/schema impacts noted</li>
+              <li>Security/privacy impact called out</li>
+            </ul>
+            <div class="path">planning/backlog.md</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4: Implementation -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-number">4</div>
+        <div class="phase-title">
+          <h2>Implementation</h2>
+          <div class="dates">April 7–23, 2026 — Development Log</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Implementation Timeline (from LOG.md)</h3>
+        <div class="log-entry">
+          <div class="log-date">2026-04-07 — Initial Implementation</div>
+          <div class="log-title">Scaffolded Vite + React 19 + TypeScript app with ESLint and Vitest</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR1</span> Encrypted vault (<code>src/crypto/vault.ts</code>), IndexedDB note store, note model with extensible blocks, autosaving, UI components, error taxonomy, tests.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-07 — Multi-user Login & SQLite Persistence</div>
+          <div class="log-title">Express API with better-sqlite3, bcryptjs, express-session</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR1</span> <span class="tag tag-sec">Sec 1</span> Auth endpoints, notes CRUD with user-scoped access (403), validation (username 3–32 chars, password min 8), session store, client fetch with credentials. Removed IndexedDB in favor of server-backed persistence.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-07 — Client-side Encryption for Server-backed Notes</div>
+          <div class="log-title">FR6-S Implementation: Vault metadata in users table, v2 encrypted payloads</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR6-S</span> <span class="tag tag-sec">Sec 1</span> Schema: <code>users.encryption_meta</code>, <code>notes.payload</code> stores <code>{v:2, ivB64, ciphertextB64}</code>. API returns ciphertext only. Legacy plaintext rows auto-re-uploaded as ciphertext.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-07 — Auth UX and API Client Fixes</div>
+          <div class="log-title">Vault unlock inline after login; fixed fetch response handling</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR1</span> <span class="tag tag-fr">FR6-S</span> AuthScreen runs <code>vault.unlock(password)</code> after login (no duplicate step). UnlockScreen only for session restore. Fixed parseJson/response handling bug.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-13 — Refined Requirements: Search, Tags, Export/Import</div>
+          <div class="log-title">FR2a, FR2b, FR7 Implementation</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR2a</span> <span class="tag tag-fr">FR2b</span> <span class="tag tag-fr">FR7</span> Note model with tags, client-side search (<code>src/search/noteSearch.ts</code>), tag normalization (<code>src/types/tags.ts</code>), vault export/import format v1.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-14 — Sidebar Note Actions: ⋯ Menu, Delete Modal</div>
+          <div class="log-title">Archive/Delete UX with "Never ask again" preference</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR1</span> Three-dot menu per note row, delete confirmation modal, per-user localStorage preference (<code>src/preferences/deleteConfirm.ts</code>).
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-15 — UI Polish, Settings Menu, Per-note Markdown Export</div>
+          <div class="log-title">FR3, FR7 Enhancements</div>
+          <div class="log-desc">
+            <span class="tag tag-fr">FR3</span> <span class="tag tag-fr">FR7</span> SettingsMenu with theme toggle, vault export/import; Export note as Markdown with YAML front matter; tag suggestions; resizable split pane; list continuation on Enter.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">2026-04-23 — Read-mode Correction, Font Scope Fix, Private PIN Modal</div>
+          <div class="log-title">UX Refinements</div>
+          <div class="log-desc">
+            Read mode renders formatted Markdown only (no source textarea). Font settings apply to preview only. Private vault PIN via in-app modals (no browser prompts).
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Key Implementation Artifacts</h3>
+        <div class="artifact-grid">
+          <div class="artifact-card">
+            <h4>Client Entry</h4>
+            <p><code>src/main.tsx</code> → <code>App.tsx</code> (Theme → Auth → Notes shell)</p>
+            <div class="path">Entry: src/main.tsx</div>
+          </div>
+          <div class="artifact-card">
+            <h4>API Entry</h4>
+            <p><code>server/index.ts</code> (listen), <code>server/app.ts</code> (routes, session)</p>
+            <div class="path">Entry: server/index.ts</div>
+          </div>
+          <div class="artifact-card">
+            <h4>Encryption</h4>
+            <p><code>src/crypto/vault.ts</code> — PBKDF2 + AES-GCM encrypt/decrypt</p>
+            <div class="path">Core: src/crypto/vault.ts</div>
+          </div>
+          <div class="artifact-card">
+            <h4>Build & Typecheck</h4>
+            <p>Three tsconfigs: app, server, node. <code>npm run typecheck</code> checks both.</p>
+            <div class="path">tsconfig.*.json</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 5: Testing & Quality Assurance -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-number">5</div>
+        <div class="phase-title">
+          <h2>Testing & Quality Assurance</h2>
+          <div class="dates">Ongoing — Vitest + Supertest</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Testing Strategy</h3>
+        <div class="sprint-grid">
+          <div class="sprint-card">
+            <h4>Client Tests (jsdom)</h4>
+            <p>Vitest with jsdom environment. Setup: <code>src/test/setup.ts</code> loads fake-indexeddb/auto + @testing-library/jest-dom/vitest.</p>
+            <ul>
+              <li>Crypto vault tests</li>
+              <li>Tag normalization tests</li>
+              <li>Delete confirm preference tests</li>
+              <li>Note search tests</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>Server Tests (node)</h4>
+            <p><code>server/app.test.ts</code> — Supertest with <code>request.agent(app)</code>, temp DB in <code>os.tmpdir()</code>.</p>
+            <ul>
+              <li>Register + login flow</li>
+              <li>Cross-user PUT forbidden (403)</li>
+              <li>Assert ciphertext in DB responses (not plaintext)</li>
+              <li>Encrypted save/list with v2 payload</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>Quality Commands</h4>
+            <ul>
+              <li><code>npm run test</code> — Vitest run</li>
+              <li><code>npm run test:watch</code> — Vitest watch</li>
+              <li><code>npm run lint</code> — ESLint (excludes server/)</li>
+              <li><code>npm run typecheck</code> — TSC both configs</li>
+              <li><code>npm run build</code> — Typecheck + Vite build</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-secondary)">Test config: <code>vite.config.ts</code> with <code>environmentMatchGlobs</code> for server tests → node.</p>
+      </div>
+
+      <div class="section">
+        <h3>Security Testing Focus</h3>
+        <div class="artifact-card">
+          <h4>Key Security Test Patterns</h4>
+          <ul>
+            <li><span class="tag tag-sec">Sec 1</span> API tests assert <strong>ciphertext</strong> in DB responses, not plaintext titles</li>
+            <li><span class="tag tag-fr">FR6-S</span> Cross-user access returns 403; second scenario with user B attempting user A's note</li>
+            <li><span class="tag tag-fr">FR1</span> Autosave with vault open/closed branches; lastSavedAt on 204, ErrorBanner on failure</li>
+            <li><span class="tag tag-sec">Sec 1</span> Decrypt failure uses AN_CRYPTO_003 with explicit user message</li>
+            <li><span class="tag tag-sec">Sec 3</span> API sets <code>Cache-Control: no-store</code> on /api/* routes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 6: Deployment & Maintenance -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-number">6</div>
+        <div class="phase-title">
+          <h2>Deployment & Maintenance</h2>
+          <div class="dates">April 2026 — Docker, Dev Container, Operations</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Deployment Architecture</h3>
+        <div class="sprint-grid">
+          <div class="sprint-card">
+            <h4>Development (Local)</h4>
+            <p><code>npm run dev</code> — Concurrently runs API (:3001) + Vite (:5173)</p>
+            <ul>
+              <li>Vite proxies /api → http://127.0.0.1:3001</li>
+              <li>Hot reload for both client and server</li>
+              <li>SQLite at ./data/astranotes.db</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>Docker Development</h4>
+            <p>Docker Compose with bind-mounts for live editing inside Linux container.</p>
+            <ul>
+              <li><code>npm run docker:up</code> — dev profile</li>
+              <li>node_modules as named volume (Linux binaries)</li>
+              <li>./data mounted for SQLite persistence</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>Production Docker</h4>
+            <p>Express serves SPA + API on port 4173 (no Vite preview).</p>
+            <ul>
+              <li><code>npm run docker:prod</code> — profile prod</li>
+              <li>SESSION_SECRET required in production</li>
+              <li>Serves dist/ and /api on single port</li>
+            </ul>
+          </div>
+          <div class="sprint-card">
+            <h4>Dev Container</h4>
+            <p>Cursor/VS Code Dev Container using same Compose service.</p>
+            <ul>
+              <li>.devcontainer/devcontainer.json</li>
+              <li>Consistent Linux environment</li>
+              <li>Cross-platform (Mac, Windows, Linux)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Operational Considerations</h3>
+        <div class="artifact-grid">
+          <div class="artifact-card">
+            <h4>Security Constraints</h4>
+            <p><span class="tag tag-sec">Sec 1</span> Non-localhost HTTP breaks crypto.subtle — use HTTPS via reverse proxy (Caddy, Nginx, Tailscale).</p>
+            <div class="path">README.md — Troubleshooting</div>
+          </div>
+          <div class="artifact-card">
+            <h4>SQLite Journal Mode</h4>
+            <p>WAL auto-selected on local disks; falls back to DELETE on network filesystems. Configurable via ASTRANOTES_SQLITE_JOURNAL_MODE.</p>
+            <div class="path">server/db.ts, .env.example</div>
+          </div>
+          <div class="artifact-card">
+            <h4>Native Dependencies</h4>
+            <p>better-sqlite3 requires platform-specific binaries. Never copy node_modules between OSes. Use <code>npm rebuild better-sqlite3</code> on Windows if needed.</p>
+            <div class="path">README.md — Cross-platform</div>
+          </div>
+          <div class="artifact-card">
+            <h4>Environment Configuration</h4>
+            <p>SESSION_SECRET (required prod), PORT (default 3001), ASTRANOTES_DB_PATH (optional). Copy .env.example to .env to override.</p>
+            <div class="path">.env.example</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Project Maintenance</h3>
+        <div class="log-entry">
+          <div class="log-date">Documentation</div>
+          <div class="log-desc">
+            README.md (overview, troubleshooting), AGENTS.md (OpenCode instructions), LOG.md (dated work log), planning/ docs (requirements, design, PRD).
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">Traceability Updates</div>
+          <div class="log-desc">
+            When requirements/implementation change: update Lucid UML, re-run traceability validation, amend SDD version/date.
+          </div>
+        </div>
+        <div class="log-entry">
+          <div class="log-date">Known Deferred Items</div>
+          <div class="log-desc">
+            FR5 (Voice), FR2c (10k-note search), FR8 (offline+sync), FR6-P (per-note passphrase), Sec 2 (full plugin sandbox), Sec 3 (automated backups), Sec 4 (audit UI).
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>SDLC Metrics Summary</h3>
+        <div class="metrics">
+          <div class="metric-card">
+            <div class="metric-value">7</div>
+            <div class="metric-label">User Stories (US-1 to US-7)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">8</div>
+            <div class="metric-label">Functional Requirements (FR1–FR8)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">6</div>
+            <div class="metric-label">UML Diagrams (Lucid)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">15+</div>
+            <div class="metric-label">Planning Documents</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">2</div>
+            <div class="metric-label">TypeScript Configs (app, server, node)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">3</div>
+            <div class="metric-label">Docker Deployment Options</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>AstraNotes SDLC Documentation — Generated from planning documents and Lucid UML traces</p>
+      <p style="margin-top:0.5rem;">CSEN 296B • Spring 2026 • github.com/victorbuenog/AstraNotes</p>
+    </div>
+  </div>
+</body>
+</html>

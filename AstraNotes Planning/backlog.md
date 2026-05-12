@@ -1,8 +1,23 @@
+---
+aliases:
+  - Prioritized Backlog
+tags:
+  - astranotes
+  - planning
+  - backlog
+---
+
 # Prioritized backlog (early)
 
-**Status note (2026):** Many **P0/P1** items (encryption/isolation, autosave, Markdown, **search**, **tags**, **export/import**, plugin doc) are **implemented** in the current codebase; this backlog remains for **ordering**, **icebox** ideas, and **future** work (voice, scale, sync). See [`refined_requirements.md`](./refined_requirements.md) and root [`README.md`](../README.md).
+> [!info] Related notes
+> Home: [[README]]
+> Inputs: [[user-stories]] · [[requirements]] · [[refined_requirements]]
+> Sprint planning: [[sprint-zero-plan]]
+> Process rules: [[Definition of Done]] · [[Working Agreement]]
 
-Items are ordered **top to bottom** within each priority band. IDs match `planning/user-stories.md`.
+**Status note (2026):** Many **P0/P1** items (encryption/isolation, autosave, Markdown, **search**, **tags**, **export/import**, plugin doc) are **implemented** in the current codebase; this backlog remains for **ordering**, **icebox** ideas, and **future** work (voice, scale, sync). See [[refined_requirements]] and root [`README.md`](../README.md).
+
+Items are ordered **top to bottom** within each priority band. IDs match [[user-stories]].
 
 ## P0 — Must have for a coherent “secure notes” MVP
 
@@ -53,4 +68,4 @@ Items are ordered **top to bottom** within each priority band. IDs match `planni
 
 ## Definition of Done (backlog item)
 
-See `planning/Definition of Done.md` and team working agreement; backlog items close when acceptance criteria are met and docs/tests updated as required.
+See [[Definition of Done]] and [[Working Agreement]]; backlog items close when acceptance criteria are met and docs/tests updated as required.

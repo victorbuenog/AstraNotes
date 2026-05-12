@@ -1,4 +1,20 @@
+---
+aliases:
+  - Work Log
+tags:
+  - astranotes
+  - planning
+  - log
+---
+
 # AstraNotes — work log
+
+> [!info] Related notes
+> Home: [[README]]
+> Planning baseline: [[requirements]]
+> Refined baseline: [[refined_requirements]]
+> Stories and backlog: [[user-stories]] · [[backlog]]
+> Architecture: [[astranotes-design-document]] · [[architecture-review]]
 
 ## Summary (current product)
 
@@ -56,7 +72,7 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 - **Settings menu** (`SettingsMenu.tsx`): theme toggle, **Export vault (JSON)…**, **Import vault…**, **Log out**; moved from standalone sidebar buttons.
 - **Sidebar**: optional **collapse** / **drawer** (narrow screens); **⋯** menu includes **Export note…** → downloads one Markdown file (`src/vault/noteMarkdownExport.ts`, `NotesContext.exportNoteMarkdown`).
 - **Editor** (`NoteEditor.tsx`): title row + tags + save status; tag **suggestions**; **list continuation** on Enter (`src/utils/markdownListEnter.ts` + tests); resizable **Split** divider.
-- **Docs:** this log, root `README.md`, and `planning/README.md` updated to describe the above.
+- **Docs:** this log, root `README.md`, and [[README]] updated to describe the above.
 
 ---
 
@@ -65,7 +81,7 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 *Align `planning/` with the current product; record repository URL; document Docker and cross-machine workflow.*
 
 - **Repository:** [victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes) — clone + `npm install` per machine; `data/` and `.env` remain local (gitignored).
-- **Planning:** Updated [`planning/README.md`](./README.md) (repo link, Docker, env vars, project tree, scripts); [`glossary.md`](./glossary.md) (Docker terms); [`sprint-zero-plan.md`](./sprint-zero-plan.md) (dev workflow); [`backlog.md`](./backlog.md) (status note); [`requirements.md`](./requirements.md) (implementation pointer); [`Working Agreement.md`](./Working%20Agreement.md) (source location); [`user-stories.md`](./user-stories.md) (delete/archive UI note); [`Definition of Done.md`](./Definition%20of%20Done.md) (planning alignment).
+- **Planning:** Updated [[README]] (repo link, Docker, env vars, project tree, scripts); [[glossary]] (Docker terms); [[sprint-zero-plan]] (dev workflow); [[backlog]] (status note); [[requirements]] (implementation pointer); [[Working Agreement]] (source location); [[user-stories]] (delete/archive UI note); [[Definition of Done]] (planning alignment).
 - **Product (already in tree):** Docker image/Compose, Vite `host` for containers, password visibility on Auth/Unlock, sidebar ⋯ actions + delete confirmation preference, SQLite journal heuristics, README troubleshooting for `better-sqlite3` / API not running.
 
 ### 2026-04-14 — Sidebar note actions: ⋯ menu, delete modal, “never ask again” (per user)
@@ -76,11 +92,11 @@ AstraNotes is a **TypeScript-first** stack: **React + Vite** SPA plus an **Expre
 - **Delete flow:** Modal explains permanence; **Cancel** / **Confirm**; **Never ask again** (only persisted when the user confirms) sets `localStorage` key scoped by signed-in **username** (`astranotes.skipDeleteConfirm:<username>`). Subsequent deletes skip the modal for that user on that browser.
 - **Code:** `src/preferences/deleteConfirm.ts` (+ Vitest `deleteConfirm.test.ts`); `Sidebar.tsx` menu + backdrop dialog; `index.css` row layout, menu, modal. **Typecheck** passes.
 
-*Definition of Done / Working Agreement:* Change maps to requirements (safer destructive UX), is documented here and in `planning/README.md`, and is verifiable visually and via unit tests for the preference helper. No server or cross-user data exposure for the “never ask again” flag (client-only).
+*Definition of Done / Working Agreement:* Change maps to requirements (safer destructive UX), is documented here and in [[README]], and is verifiable visually and via unit tests for the preference helper. No server or cross-user data exposure for the “never ask again” flag (client-only).
 
 ### 2026-04-13 — Refined requirements: search, tags, export/import, plugins doc
 
-*Apply `planning/refined_requirements.md` baseline: FR2a, FR2b, FR7, FR4; edge-case UX for session loss and decrypt errors.*
+*Apply [[refined_requirements]] baseline: FR2a, FR2b, FR7, FR4; edge-case UX for session loss and decrypt errors.*
 
 - **Model:** `Note.tags` (encrypted with note JSON); `migrateNoteShape` for older rows; `src/types/tags.ts` normalization (max count/length, lowercase, dedupe).
 - **Search:** `src/search/noteSearch.ts` — title + body, empty query = full list, max query length 500.

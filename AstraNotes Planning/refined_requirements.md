@@ -1,4 +1,20 @@
+---
+aliases:
+  - Refined Requirements
+tags:
+  - astranotes
+  - planning
+  - requirements
+  - traceability
+---
+
 # Refined requirement baseline — AstraNotes
+
+> [!info] Related notes
+> Home: [[README]]
+> Requirement chain: [[Initial Requirements]] -> [[requirements]] -> [[refined_requirements]]
+> Acceptance and delivery: [[user-stories]] · [[backlog]] · [[sprint-zero-plan]]
+> Design validation: [[prd]] · [[uml_traceability_validation]] · [[astranotes-design-document]]
 
 **Repository:** [github.com/victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes).
 
@@ -172,4 +188,4 @@ These codes appear in this document and backlog/stories but **not** as separate 
 
 - **Purpose:** Clarify scope, reduce hidden assumptions, and support sprint planning and acceptance testing.
 - **Supersedes nothing:** Refines and interprets `Initial Requirements.md` together with `requirements.md` and user stories; when conflicts arise, **update this file** after team agreement.
-- **Implementation snapshot (web app, 2026-04):** The shipping product meets the **P0–P1** functional baseline here for **FR1** (autosave + saved feedback, archive/delete), **FR2a** (client search with documented limits), **FR2b** (tags + filter + normalization), **FR3** (Write / Split / rendered-only Read; preview tracks the editor buffer), **FR6-S** (opaque ciphertext, client decrypt, session isolation), **FR7** (versioned vault JSON export/import with validation and user acknowledgment; single-note **Markdown** export is an additional, documented export path), and **FR4** (see `docs/plugins.md`). Private-vault PIN flows use in-app dialogs (no browser prompt/alert dependency). Deferred items (**FR5**, **FR2c**, **FR8**, **FR6-P**, full **Sec 2** sandbox) remain out of scope. Detailed UI notes and traceability live in [`LOG.md`](./LOG.md) and the root [`README.md`](../README.md).
+- **Implementation snapshot (web app, 2026-04):** The shipping product meets the **P0–P1** functional baseline here for **FR1** (autosave + saved feedback, archive/delete), **FR2a** (client search with documented limits), **FR2b** (tags + filter + normalization), **FR3** (Write / Split / rendered-only Read; preview tracks the editor buffer), **FR6-S** (opaque ciphertext, client decrypt, session isolation), **FR7** (versioned vault JSON export/import with validation and user acknowledgment; single-note **Markdown** export is an additional, documented export path), and **FR4** (see `docs/plugins.md`). Private-vault PIN flows use in-app dialogs (no browser prompt/alert dependency). Deferred items (**FR5**, **FR2c**, **FR8**, **FR6-P**, full **Sec 2** sandbox) remain out of scope. Detailed UI notes and traceability live in [[LOG]] and the root [`README.md`](../README.md).

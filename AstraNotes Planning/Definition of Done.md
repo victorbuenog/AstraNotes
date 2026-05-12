@@ -1,4 +1,20 @@
+---
+aliases:
+  - DoD
+tags:
+  - astranotes
+  - planning
+  - process
+  - done
+---
+
 # Definition of Done
+
+> [!info] Related notes
+> Home: [[README]]
+> Process pair: [[Working Agreement]]
+> Delivery notes: [[backlog]] · [[user-stories]]
+> Evidence notes: [[LOG]] · [[requirements]] · [[refined_requirements]]
 
 ## Completion criteria
 
@@ -10,4 +26,4 @@ A task, feature, or artifact is complete only if **all** of the following are tr
 - It can be fully tested through automated testing (backend) or visually (UX).
 - It does not violate security requirements (for example, exposing user data in any way).
 - It is future-proof: it will not get in the way of future features (and should help enable them when possible).
-- Logs and README are updated accordingly (including [`planning/LOG.md`](./LOG.md) and [`planning/README.md`](./README.md) when behavior or developer workflow changes).
+- Logs and README are updated accordingly (including [[LOG]] and [[README]] when behavior or developer workflow changes).

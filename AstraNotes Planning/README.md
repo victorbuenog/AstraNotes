@@ -1,4 +1,17 @@
+---
+aliases:
+  - AstraNotes Planning Home
+  - Planning Home
+tags:
+  - astranotes
+  - planning
+  - moc
+---
+
 # AstraNotes (planning copy)
+
+> [!info] Vault navigation
+> Start here for the vault overview, then branch into [[prd]], [[requirements]], [[refined_requirements]], [[user-stories]], [[backlog]], [[LOG]], [[astranotes-design-document]], [[uml_traceability_validation]], and [[architecture-review]].
 
 **Public repository:** [github.com/victorbuenog/AstraNotes](https://github.com/victorbuenog/AstraNotes). Clone on any machine with **Node.js** (LTS recommended); run **`npm install`** locally—do not sync `node_modules` across OSes. Optional: **Docker** (see root [README](../README.md)) for a single Linux dev environment on Mac or Windows.
 
@@ -6,7 +19,7 @@ AstraNotes is a **multi-user** note-taking web app: **register or log in** with 
 
 The UI stays minimal: a **collapsible** left **sidebar** (notes by last modified; each row has a **⋯** menu for **Archive** / **Restore**, **Export note…** (Markdown), and **Delete**), a **markdown** editor with **Write / Split / Read** and **Settings** (theme, **vault JSON** export/import, **log out**), and clear **error messages with stable codes** for debugging. **Delete** is not exposed next to the editor; confirming permanent delete uses a dialog (with optional **Never ask again** stored per **username** in `localStorage` on this browser).
 
-> **Work log:** [`LOG.md`](./LOG.md). **Refined requirements:** [`refined_requirements.md`](./refined_requirements.md). The canonical copy of this overview is the repo root [`README.md`](../README.md).
+> **Work log:** [[LOG]]. **Refined requirements:** [[refined_requirements]]. **Initial requirements:** [[Initial Requirements]]. **Architecture review:** [[architecture-review]]. The canonical copy of this overview is the repo root [`README.md`](../README.md).
 
 ## Functionality
 
@@ -71,8 +84,8 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
 ```text
 .  (repo root — see root README for full detail)
 ├── README.md               # Canonical overview (this planning/README is a course/planning copy)
-├── planning/
-│   ├── README.md           # This file
+├── AstraNotes Planning/
+│   ├── README.md           # This file / Obsidian vault home
 │   └── LOG.md              # Dated work log
 ├── Dockerfile              # Dev + production-preview images
 ├── docker-compose.yml      # Dev stack; optional prod profile

@@ -1,6 +1,22 @@
+---
+aliases:
+  - User Stories
+tags:
+  - astranotes
+  - planning
+  - user-stories
+  - acceptance
+---
+
 # User stories — early baseline
 
-Each story ties to `planning/requirements.md` and **Initial Requirements.md**. Acceptance criteria are written to be **testable** (manual and/or automated).
+> [!info] Related notes
+> Home: [[README]]
+> Requirement chain: [[Initial Requirements]] · [[requirements]] · [[refined_requirements]]
+> Delivery planning: [[backlog]] · [[sprint-zero-plan]]
+> Process rules: [[Definition of Done]] · [[Working Agreement]]
+
+Each story ties to [[requirements]] and [[Initial Requirements]]. Acceptance criteria are written to be **testable** (manual and/or automated).
 
 **UI note:** **Archive** / **delete permanently** are triggered from the sidebar **⋯** menu (not the editor toolbar). **Delete** uses a confirmation dialog (with optional **never ask again** per user on this browser).
 

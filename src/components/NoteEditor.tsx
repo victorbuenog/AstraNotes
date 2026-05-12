@@ -10,7 +10,6 @@ import { flushSync } from 'react-dom'
 import type { Note } from '../types/note'
 import { getPrimaryMarkdown } from '../types/note'
 import { parseTagsFromInput } from '../types/tags'
-import { collectAllTags } from '../search/noteSearch'
 import { applyMarkdownListEnter } from '../utils/markdownListEnter'
 import { BlockPreview } from './BlockPreview'
 import { useNotes } from '../context/NotesContext'
@@ -23,7 +22,7 @@ const SPLIT_PCT_MIN = 22
 const SPLIT_PCT_MAX = 78
 
 export function NoteEditor({ note }: Props) {
-  const { notes, updateNote, flushSave, saving, lastSavedAt } = useNotes()
+  const { allTags, updateNote, flushSave, saving, lastSavedAt } = useNotes()
   const [title, setTitle] = useState(note.title)
   const [markdown, setMarkdown] = useState(() => getPrimaryMarkdown(note))
   const [tagsField, setTagsField] = useState(() => note.tags.join(', '))
@@ -60,8 +59,6 @@ export function NoteEditor({ note }: Props) {
   const commitTags = () => {
     updateNote(note.id, { tags: parseTagsFromInput(tagsField) })
   }
-
-  const allTags = useMemo(() => collectAllTags(notes), [notes])
 
   const tagSuggestions = useMemo(() => {
     const lastComma = tagsField.lastIndexOf(',')

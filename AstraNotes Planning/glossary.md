@@ -1,6 +1,21 @@
+---
+aliases:
+  - Glossary
+tags:
+  - astranotes
+  - planning
+  - glossary
+---
+
 # Planning and project glossary
 
-Short definitions for acronyms and shorthand used in `planning/*.md`, `LOG.md`, and project READMEs.
+> [!info] Related notes
+> Home: [[README]]
+> Requirement notes: [[Initial Requirements]] · [[requirements]] · [[refined_requirements]]
+> Delivery notes: [[user-stories]] · [[backlog]] · [[sprint-zero-plan]]
+> Process notes: [[Definition of Done]] · [[Working Agreement]]
+
+Short definitions for acronyms and shorthand used in this vault, [[LOG]], and project READMEs.
 
 ## Planning and process
 
@@ -56,8 +71,8 @@ Short definitions for acronyms and shorthand used in `planning/*.md`, `LOG.md`, 
 
 ## Related planning files
 
-- `requirements.md` — early baseline and traceability to FR / NFR / Sec.
-- `user-stories.md` — US-* stories and acceptance criteria.
-- `backlog.md` — prioritized work and icebox.
-- `sprint-zero-plan.md` — first sprint focus and spikes.
-- `Initial Requirements.md` — source FR / NFR / Sec numbering.
+- [[requirements]] — early baseline and traceability to FR / NFR / Sec.
+- [[user-stories]] — US-* stories and acceptance criteria.
+- [[backlog]] — prioritized work and icebox.
+- [[sprint-zero-plan]] — first sprint focus and spikes.
+- [[Initial Requirements]] — source FR / NFR / Sec numbering.
