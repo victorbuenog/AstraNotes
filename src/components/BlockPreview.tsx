@@ -1,12 +1,16 @@
 import ReactMarkdown from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 import type { NoteBlock } from '../types/note'
 
 export function BlockPreview({ block }: { block: NoteBlock }) {
   if (block.type === 'markdown') {
     return (
       <div className="md-preview">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.text || '*Empty*'}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+          {block.text || '*Empty*'}
+        </ReactMarkdown>
       </div>
     )
   }
