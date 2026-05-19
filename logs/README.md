@@ -11,6 +11,6 @@ Session logs track meaningful agent work across sessions.
 
 | Date | Session | Topic | Status | Next for agents | Link |
 |------|---------|-------|--------|------------------|------|
-| _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| 2026-05-18 | `2026-05-18-1903-inline-latex-math` | Inline LaTeX markdown support | done | Lazy-load math renderer; add `$$...$$` test | [`logs/sessions/2026-05-18-1903-inline-latex-math.md`](./sessions/2026-05-18-1903-inline-latex-math.md) |
 
 > Replace `_TBD_` row with real entries. Keep newest-first order.
