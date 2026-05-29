@@ -22,7 +22,8 @@ const SPLIT_PCT_MIN = 22
 const SPLIT_PCT_MAX = 78
 
 export function NoteEditor({ note }: Props) {
-  const { allTags, updateNote, flushSave, saving, lastSavedAt } = useNotes()
+  const { allTags, updateNote, flushSave, saving, lastSavedAt, getNoteScrollPosition, setNoteScrollPosition } =
+    useNotes()
   const [title, setTitle] = useState(note.title)
   const [markdown, setMarkdown] = useState(() => getPrimaryMarkdown(note))
   const [tagsField, setTagsField] = useState(() => note.tags.join(', '))
@@ -38,6 +39,23 @@ export function NoteEditor({ note }: Props) {
   const splitWrapRef = useRef<HTMLDivElement>(null)
   const tagsInputRef = useRef<HTMLInputElement>(null)
   const tagsWrapRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const pos = getNoteScrollPosition(note.id)
+    if (pos) {
+      if (textareaRef.current) textareaRef.current.scrollTop = pos.textarea
+      if (previewRef.current) previewRef.current.scrollTop = pos.preview
+    }
+  }, [note.id, getNoteScrollPosition])
+
+  const saveScrollPosition = useCallback(() => {
+    setNoteScrollPosition(note.id, {
+      textarea: textareaRef.current?.scrollTop ?? 0,
+      preview: previewRef.current?.scrollTop ?? 0,
+    })
+  }, [note.id, setNoteScrollPosition])
 
   const tagsJoined = note.tags.join(',')
   useEffect(() => {
@@ -248,11 +266,13 @@ export function NoteEditor({ note }: Props) {
       >
         {mode !== 'preview' && (
           <textarea
+            ref={textareaRef}
             className="editor__textarea"
             value={markdown}
             onChange={(e) => handleBody(e.target.value)}
             onKeyDown={onBodyKeyDown}
             onBlur={() => void flushSave()}
+            onScroll={saveScrollPosition}
             placeholder="Write markdown…"
             aria-label="Markdown body"
             spellCheck
@@ -269,7 +289,9 @@ export function NoteEditor({ note }: Props) {
           />
         )}
         {mode !== 'edit' && (
-          <div className="editor__preview-scroll">{previews}</div>
+          <div ref={previewRef} className="editor__preview-scroll" onScroll={saveScrollPosition}>
+            {previews}
+          </div>
         )}
       </div>
     </div>

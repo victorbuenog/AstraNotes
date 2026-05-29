@@ -105,4 +105,46 @@ describe('API auth and note isolation', () => {
     const plain = await v1.decrypt(row.payload.ivB64, row.payload.ciphertextB64)
     expect(JSON.parse(plain).title).toBe('Carol note')
   })
+
+  it('rejects unauthenticated GET, PUT, DELETE with 401', async () => {
+    const r = request(app)
+    await r.get('/api/notes').expect(401)
+    await r.put('/api/notes/some-id').send({ v: 2, ivB64: 'x', ciphertextB64: 'y', updatedAt: 1 }).expect(401)
+    await r.delete('/api/notes/some-id').expect(401)
+  })
+
+  it('rejects PUT with malformed encrypted payload (400)', async () => {
+    const vault = new Vault()
+    const meta = await vault.create('password12345')
+    const agent = request.agent(app)
+    await agent.post('/api/register').send({ username: 'badput', password: 'password12345', encryptionMeta: meta }).expect(201)
+
+    await agent.put('/api/notes/n1').send({ v: 1, ivB64: 'x', ciphertextB64: 'y', updatedAt: 1 }).expect(400)
+    await agent.put('/api/notes/n1').send({ v: 2, ciphertextB64: 'y', updatedAt: 1 }).expect(400)
+    await agent.put('/api/notes/n1').send({ v: 2, ivB64: 'x', updatedAt: 1 }).expect(400)
+    await agent.put('/api/notes/n1').send('garbage').expect(400)
+  })
+
+  it('DELETE removes a note and rejects cross-user delete', async () => {
+    const v1 = new Vault()
+    const m1 = await v1.create('password12345')
+    const a = request.agent(app)
+    await a.post('/api/register').send({ username: 'del1', password: 'password12345', encryptionMeta: m1 }).expect(201)
+
+    const note = newNote({ title: 'delete me' })
+    const enc = await v1.encrypt(JSON.stringify(note))
+    await a.put(`/api/notes/${note.id}`).send({ v: 2, ivB64: enc.ivB64, ciphertextB64: enc.ciphertextB64, updatedAt: note.updatedAt }).expect(204)
+
+    await a.delete(`/api/notes/${note.id}`).expect(204)
+    const list = await a.get('/api/notes').expect(200)
+    expect(list.body).toHaveLength(0)
+
+    await a.delete(`/api/notes/${note.id}`).expect(404)
+
+    const v2 = new Vault()
+    const m2 = await v2.create('password12345')
+    const b = request.agent(app)
+    await b.post('/api/register').send({ username: 'del2', password: 'password12345', encryptionMeta: m2 }).expect(201)
+    await b.delete(`/api/notes/${note.id}`).expect(404)
+  })
 })

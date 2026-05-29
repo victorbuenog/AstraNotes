@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "backlog.md",
+                "file": "collaboration-note.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "backlog"
+              "title": "collaboration-note"
             }
           }
         ]
@@ -185,8 +185,12 @@
   },
   "active": "f1e713aa65229b86",
   "lastOpenFiles": [
-    "src/components/AuthScreen.tsx.md",
+    "collaboration-note.pdf",
+    "test_planning.md",
+    "collaboration-note.md",
+    "requirements.md",
     "backlog.md",
+    "src/components/AuthScreen.tsx.md",
     "architecture-review.md",
     "uml_traceability_validation.md",
     "src/components",
@@ -196,7 +200,6 @@
     "governance_ethics_memo.md",
     "astranotes-design-document.md",
     "refined_requirements.md",
-    "requirements.md",
     "user-stories.md",
     "glossary.md",
     "LOG.md",

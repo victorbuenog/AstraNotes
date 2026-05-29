@@ -4,7 +4,7 @@ AstraNotes is a **multi-user** note-taking web app: **register or log in** with 
 
 The UI stays minimal: a **collapsible** left **sidebar** (notes by last modified), a **markdown** editor with **Write / Split / Read** (resizable split on wide layouts), **Settings** (theme, **vault JSON** export/import, **log out**), and clear **error messages with stable codes** for debugging.
 
-> **Work log:** day-to-day notes live in [`planning/LOG.md`](./planning/LOG.md). **Refined requirements** (FR/NFR, traceability) are in [`planning/refined_requirements.md`](./planning/refined_requirements.md).
+> **Work log:** day-to-day notes live in [`AstraNotes Planning/LOG.md`](./AstraNotes%20Planning/LOG.md). **Refined requirements** (FR/NFR, traceability) are in [`AstraNotes Planning/refined_requirements.md`](./AstraNotes%20Planning/refined_requirements.md).
 
 ## Functionality
 
@@ -146,9 +146,10 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
 ├── README.md               # This file — overview and structure
 ├── docs/
 │   └── plugins.md          # FR4 extension boundary (blocks, trust model)
-├── planning/
+├── AstraNotes Planning/
 │   ├── LOG.md              # Dated work log
-│   └── refined_requirements.md
+│   ├── refined_requirements.md
+│   └── ...                 # Architecture, PRD, user stories, etc.
 ├── server/
 │   ├── index.ts            # API entry (listen)
 │   ├── app.ts              # Express app, routes, session

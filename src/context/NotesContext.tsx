@@ -37,6 +37,11 @@ import {
 import { removeNoteById, sortNotesByUpdatedAt, upsertSortedNote } from '../notes/noteCollection'
 import { getAllNoteTags, getSelectedVisibleNoteId, getVisibleNotes } from '../notes/notesViewState'
 
+export type NoteScrollPositions = {
+  textarea: number
+  preview: number
+}
+
 export type AppErrorState = { message: string; code: string } | null
 
 type NotesContextValue = {
@@ -75,6 +80,8 @@ type NotesContextValue = {
   hasPrivatePin: boolean
   setPrivatePin: (pin: string) => Promise<boolean>
   resetPrivatePinAndWipe: (nextPin: string) => Promise<boolean>
+  getNoteScrollPosition: (id: string) => NoteScrollPositions | null
+  setNoteScrollPosition: (id: string, pos: NoteScrollPositions) => void
 }
 
 const NotesContext = createContext<NotesContextValue | null>(null)
@@ -96,7 +103,16 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
   const [hasPrivatePin, setHasPrivatePinState] = useState(() => hasStoredPrivatePin(user?.username))
   const pendingRef = useRef<Map<string, Note>>(new Map())
   const notesRef = useRef<Note[]>([])
+  const noteScrollPositionsRef = useRef<Map<string, NoteScrollPositions>>(new Map())
   const username = user?.username
+
+  const getNoteScrollPosition = useCallback((id: string): NoteScrollPositions | null => {
+    return noteScrollPositionsRef.current.get(id) ?? null
+  }, [])
+
+  const setNoteScrollPosition = useCallback((id: string, pos: NoteScrollPositions): void => {
+    noteScrollPositionsRef.current.set(id, pos)
+  }, [])
 
   useEffect(() => {
     notesRef.current = notes
@@ -469,6 +485,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       hasPrivatePin,
       setPrivatePin,
       resetPrivatePinAndWipe,
+      getNoteScrollPosition,
+      setNoteScrollPosition,
     }),
     [
       notes,
@@ -488,7 +506,9 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       importVaultFromText,
       exportNoteMarkdown,
       searchQuery,
+      setSearchQuery,
       tagFilter,
+      setTagFilter,
       saving,
       lastSavedAt,
       error,
@@ -500,6 +520,8 @@ export function NotesProvider({ vault, children }: { vault: Vault; children: Rea
       hasPrivatePin,
       setPrivatePin,
       resetPrivatePinAndWipe,
+      getNoteScrollPosition,
+      setNoteScrollPosition,
     ],
   )
 
