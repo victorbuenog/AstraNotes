@@ -152,16 +152,35 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
 │   └── ...                 # Architecture, PRD, user stories, etc.
 ├── server/
 │   ├── index.ts            # API entry (listen)
-│   ├── app.ts              # Express app, routes, session
+│   ├── app.ts              # Express app, session, route mounts
 │   ├── db.ts               # SQLite open + schema
+│   ├── sessionConfig.ts    # cookie/session configuration
 │   ├── session.d.ts        # express-session userId/username
+│   ├── journalMode.ts      # WAL/DELETE journal auto-detect
+│   ├── middleware/
+│   │   └── auth.ts         # Auth middleware
+│   ├── routers/
+│   │   ├── authRouter.ts   # register, login, logout, me
+│   │   └── notesRouter.ts  # notes CRUD
+│   ├── repositories/
+│   │   ├── noteRepository.ts
+│   │   └── userRepository.ts
+│   ├── validators/
+│   │   ├── authValidators.ts
+│   │   └── noteValidators.ts
 │   └── app.test.ts         # Supertest isolation tests
 └── src/
     ├── main.tsx            # React root
     ├── App.tsx             # Theme → auth → [unlock if session-only] → notes shell
     ├── index.css           # Global / theme variables
     ├── api/
-    │   └── client.ts       # fetch helpers, credentials, errors
+    │   ├── client.ts       # fetch wrappers, credentials, error mapping
+    │   ├── httpClient.ts   # low-level HTTP helpers
+    │   ├── authApi.ts      # auth endpoints (register, login, me, logout)
+    │   ├── notesRepository.ts # notes CRUD via API
+    │   └── noteWireCodec.ts   # encrypted wire format encode/decode
+    ├── auth/
+    │   └── vaultSession.ts # auth/vault orchestration service
     ├── components/
     │   ├── AuthScreen.tsx  # Register / log in; vault unlock inline after login (same password)
     │   ├── UnlockScreen.tsx # Password after session restore (e.g. refresh); skipped right after log-in
@@ -182,6 +201,13 @@ npm run preview    # serves dist/; still proxies /api → 127.0.0.1:3001 — run
     │   └── noteWire.ts     # Encrypted payload wire shape (v2)
     ├── search/
     │   └── noteSearch.ts   # Client-side search helpers (FR2a)
+    ├── notes/
+    │   ├── noteCollection.ts   # Note collection utilities
+    │   └── notesViewState.ts   # View state selectors
+    ├── preferences/
+    │   ├── deleteConfirm.ts    # Delete confirmation preference (localStorage)
+    │   ├── editorAppearance.ts # Editor font family/size preference
+    │   └── privatePin.ts       # Private vault PIN preference
     ├── utils/
     │   └── markdownListEnter.ts # List continuation on Enter in the markdown editor
     ├── vault/
